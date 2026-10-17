@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desktop Pet Bluetooth Control</title>
+<style>
+body{font-family:Arial,sans-serif;text-align:center;background:#171923;color:white;padding:20px}
+button{padding:15px 12px;margin:7px;width:135px;border:0;border-radius:12px;font-size:16px;font-weight:bold}
+.connect{background:#36c5f0}.command{background:#ffcf55}
+#status{color:#80f0a0;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<h2>Desktop Pet Robot</h2>
+<p id="status">Not connected</p>
+<button class="connect" onclick="connectRobot()">Connect Bluetooth</button><br>
+<button class="command" onclick="sendCommand('LEFT')">Look Left</button>
+<button class="command" onclick="sendCommand('RIGHT')">Look Right</button>
+<button class="command" onclick="sendCommand('BLINK')">Blink</button>
+<button class="command" onclick="sendCommand('HAPPY')">Happy</button>
+<button class="command" onclick="sendCommand('SLEEP')">Sleep</button>
+<script>
+const serviceUUID="12345678-1234-1234-1234-1234567890ab";
+const characteristicUUID="abcdefab-1234-1234-1234-abcdefabcdef";
+let commandCharacteristic;
+async function connectRobot(){
+ try{
+  if(!navigator.bluetooth) throw new Error("Web Bluetooth is unavailable here. Use Chrome on Android and an HTTPS-hosted page.");
+  const device=await navigator.bluetooth.requestDevice({filters:[{name:"DesktopPet"}],optionalServices:[serviceUUID]});
+  device.addEventListener("gattserverdisconnected",()=>{document.getElementById("status").textContent="Disconnected";commandCharacteristic=null;});
+  const server=await device.gatt.connect();
+  const service=await server.getPrimaryService(serviceUUID);
+  commandCharacteristic=await service.getCharacteristic(characteristicUUID);
+  document.getElementById("status").textContent="Connected to "+device.name;
+ }catch(error){document.getElementById("status").textContent="Connection failed: "+error.message;}
+}
+async function sendCommand(command){
+ try{
+  if(!commandCharacteristic){alert("Connect to DesktopPet first.");return;}
+  await commandCharacteristic.writeValue(new TextEncoder().encode(command));
+  document.getElementById("status").textContent="Sent command: "+command;
+ }catch(error){document.getElementById("status").textContent="Send failed: "+error.message;}
+}
+</script>
+</body>
+</html>
