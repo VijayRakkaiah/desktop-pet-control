@@ -2,295 +2,881 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#07121f">
-<title>Desktop Pet Control</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#06101c">
+<title>Desktop Pet</title>
 <style>
-:root{color-scheme:dark;--bg:#07121f;--panel:#101f30;--cyan:#29dfff;--blue:#26a9ff;--pink:#ff6bb7;--yellow:#ffd45c;--text:#eaf7ff;--muted:#a8bdcc}
-*{box-sizing:border-box}
-body{margin:0;background:radial-gradient(ellipse at top,#112d42 0,#07121f 55%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;padding:20px 14px 30px}
-main{max-width:720px;margin:auto}
-h1{text-align:center;font-size:1.55rem;margin:4px 0 5px;letter-spacing:.3px}
-h2{font-size:1.05rem;margin:0 0 12px}
-.sub{text-align:center;color:var(--muted);margin:0 0 18px;font-size:.92rem}
-.panel{background:rgba(16,31,48,.92);border:1px solid #24465c;border-radius:20px;padding:16px;margin:12px 0;box-shadow:0 12px 28px #0005}
-.status{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:.92rem}
-.dot{width:9px;height:9px;border-radius:50%;background:#ff5d72;display:inline-block}
-.dot.on{background:#51efad;box-shadow:0 0 10px #51efad}
-button{font:inherit;border:0;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.connect:disabled{opacity:.65;cursor:wait}.connect{display:block;width:min(100%,280px);margin:15px auto 4px;padding:14px;border-radius:14px;background:linear-gradient(120deg,#25d7ee,#42aaff);color:#03101b;font-weight:800;font-size:1rem}
-.hint{text-align:center;color:var(--muted);font-size:.82rem;line-height:1.45;margin:12px 0 0}
+:root{
+  color-scheme:dark;
+  --bg:#06101c;--bg2:#0b1a2b;--card:#0f2134;--card2:#132a42;--line:#1f3a55;--line2:#2a5070;
+  --text:#eaf4ff;--muted:#8fa8bf;--dim:#5f7a93;
+  --cyan:#2ee0ff;--blue:#3d9bff;--pink:#ff6fb1;--yellow:#ffd25a;--amber:#ffb53d;--green:#45e3a0;--red:#ff5d72;
+  --radius:18px;--nav:68px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{min-height:100vh;background:radial-gradient(120% 60% at 50% -10%,#14365a 0,#06101c 60%) fixed}
+button,input,select{font:inherit;color:inherit}
+button{border:0;cursor:pointer;touch-action:manipulation}
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(6,16,28,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(145deg,#ffe07a,#ffb53d);display:grid;place-items:center;box-shadow:inset 0 -3px 0 #d8902a}
+.logo i{display:block;width:26px;height:16px;border-radius:5px;background:#07121f;position:relative}
+.logo i::before,.logo i::after{content:"";position:absolute;top:4px;width:6px;height:8px;border-radius:2px;background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+.logo i::before{left:5px}.logo i::after{right:5px}
+.brand{flex:1;min-width:0}
+.brand b{display:block;font-size:1.02rem;letter-spacing:.2px}
+.brand span{display:block;font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;background:linear-gradient(120deg,#25d7ee,#3d9bff);color:#03101b;font-weight:800;font-size:.86rem;white-space:nowrap}
+.pill.on{background:#10283d;color:var(--text);border:1px solid var(--line2)}
+.pill:disabled{opacity:.6}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--red)}
+.pill.on .dot{background:var(--green);box-shadow:0 0 8px var(--green)}
+main{max-width:720px;margin:auto;padding:14px 16px calc(var(--nav) + 26px)}
+.tab{display:none;animation:fade .25s ease}
+.tab.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card{background:linear-gradient(180deg,var(--card),#0c1c2e);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:0 0 14px;box-shadow:0 10px 30px #0006}
+.card h2{display:flex;align-items:center;gap:8px;font-size:1rem;margin:0 0 4px}
+.card h2 svg{width:18px;height:18px;color:var(--cyan)}
+.card .sub{color:var(--muted);font-size:.82rem;margin:0 0 14px;line-height:1.45}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grow{flex:1;min-width:0}
+.btn{padding:11px 14px;border-radius:12px;background:var(--card2);border:1px solid var(--line2);font-weight:700;font-size:.9rem}
+.btn:active{transform:scale(.97);background:#1b3a58}
+.btn.primary{background:linear-gradient(120deg,#25d7ee,#3d9bff);color:#03101b;border:0}
+.btn.warn{background:#3a1622;border-color:#6b2a3a;color:#ffc2cc}
+.btn.on{background:#11384a;border-color:var(--cyan);color:var(--cyan)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grid.g4{grid-template-columns:repeat(4,1fr)}
+.chip{padding:12px 6px;border-radius:12px;background:var(--card2);border:1px solid var(--line2);font-weight:650;font-size:.84rem;display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.15;text-align:center}
+.chip .e{font-size:1.35rem}
+.chip:active{transform:scale(.96);background:#1d4060}
+input[type=text],select{width:100%;padding:11px 12px;border-radius:12px;background:#0a1828;border:1px solid var(--line2);outline:none}
+input[type=text]:focus,select:focus{border-color:var(--cyan)}
+label.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:.9rem}
+label.sw:first-of-type{border-top:0}
+label.sw small{display:block;color:var(--muted);font-size:.76rem;margin-top:2px}
+.tg{appearance:none;width:46px;height:26px;border-radius:99px;background:#27405a;position:relative;flex:none;cursor:pointer;transition:.2s}
+.tg::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#cfe3f5;transition:.2s}
+.tg:checked{background:var(--cyan)}
+.tg:checked::after{left:23px;background:#03101b}
+input[type=range]{width:100%;accent-color:var(--cyan)}
+/* mood */
+.mood-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.mood-label{font-size:1.4rem;font-weight:800;color:var(--yellow)}
+.bars{display:grid;gap:9px}
+.bar{display:grid;grid-template-columns:62px 1fr 34px;align-items:center;gap:10px;font-size:.82rem;color:var(--muted)}
+.bar .t{height:9px;border-radius:9px;background:#132a40;overflow:hidden}
+.bar .f{height:100%;border-radius:9px;width:0;transition:width .8s ease}
+.bar b{color:var(--text);text-align:right;font-weight:700}
+/* main controls */
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.control{min-height:124px;border-radius:18px;background:linear-gradient(150deg,#ffe17c,#ffbd48);color:#251900;padding:14px 10px;box-shadow:inset 0 -4px 0 #d99a2f}
-.control strong{display:block;font-size:1.18rem}
-.control .symbol{font-size:2rem;display:block;line-height:1.2;margin-bottom:5px}
-.control small{display:block;font-size:.77rem;margin-top:7px;font-weight:650;line-height:1.3}
-.control:active{transform:scale(.98)}
-.extra{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.extra button{padding:12px 6px;border-radius:12px;background:#17334a;border:1px solid #28556c;color:var(--text);font-weight:700}
-.extra button:active{background:#225777}
-.note{color:var(--muted);font-size:.82rem;line-height:1.45;margin:10px 0 0}
-#pad{position:relative;height:170px;border-radius:16px;background:radial-gradient(circle at center,#12354d 0,#0a1c2c 70%);border:1px solid #28556c;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden}
+.control{min-height:118px;border-radius:18px;background:linear-gradient(150deg,#ffe17c,#ffb94a);color:#251900;padding:14px 10px;box-shadow:inset 0 -4px 0 #d39433,0 8px 20px #0005;user-select:none;-webkit-user-select:none}
+.control strong{display:block;font-size:1.14rem}
+.control .sym{font-size:1.7rem;display:block;line-height:1.15;margin-bottom:4px}
+.control small{display:block;font-size:.74rem;margin-top:6px;font-weight:650;line-height:1.35;opacity:.85}
+.control:active{transform:scale(.97)}
+/* voice */
+.mic-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:6px 0 4px}
+.mic{width:96px;height:96px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3fe6ff,#1f7fe0);display:grid;place-items:center;box-shadow:0 10px 30px #1f7fe055;position:relative}
+.mic svg{width:40px;height:40px;color:#03101b}
+.mic.live{background:radial-gradient(circle at 35% 30%,#ff8fc4,#e2387f);box-shadow:0 10px 30px #e2387f66}
+.mic.live::before{content:"";position:absolute;inset:-8px;border-radius:50%;border:2px solid #ff6fb188;animation:ring 1.4s infinite}
+@keyframes ring{from{transform:scale(.9);opacity:1}to{transform:scale(1.25);opacity:0}}
+.mic-state{color:var(--muted);font-size:.85rem;min-height:1.2em;text-align:center}
+.convo{display:grid;gap:8px;margin-top:10px}
+.msg{max-width:85%;padding:10px 13px;border-radius:16px;font-size:.9rem;line-height:1.35}
+.msg.you{justify-self:end;background:#1d3d5c;border-bottom-right-radius:5px}
+.msg.pet{justify-self:start;background:#2a2410;color:#ffe6a3;border:1px solid #574a1c;border-bottom-left-radius:5px}
+.help{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.help span{font-size:.75rem;padding:5px 9px;border-radius:99px;background:#0b1c2e;border:1px solid var(--line);color:var(--muted)}
+/* camera */
+.cam{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:4/3;border:1px solid var(--line2)}
+.cam video,.cam canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.cam .ph{position:absolute;inset:0;display:grid;place-items:center;color:var(--dim);font-size:.85rem;text-align:center;padding:20px}
+.meter{height:12px;border-radius:9px;background:#132a40;overflow:hidden;position:relative}
+.meter i{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,var(--green),var(--yellow),var(--red));border-radius:9px;transition:width .08s}
+.meter b{position:absolute;top:-3px;bottom:-3px;width:2px;background:#fff9}
+/* look pad */
+#pad{position:relative;height:170px;border-radius:14px;background:radial-gradient(circle at center,#12354d 0,#0a1c2c 70%);border:1px solid var(--line2);touch-action:none;user-select:none;overflow:hidden}
 #pad::before,#pad::after{content:"";position:absolute;background:#28556c55}
-#pad::before{left:50%;top:0;bottom:0;width:1px}
-#pad::after{top:50%;left:0;right:0;height:1px}
+#pad::before{left:50%;top:0;bottom:0;width:1px}#pad::after{top:50%;left:0;right:0;height:1px}
 #puck{position:absolute;width:26px;height:26px;border-radius:50%;background:var(--cyan);box-shadow:0 0 16px var(--cyan);left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;transition:left .12s,top .12s}
 #pad.active #puck{transition:none}
-@media(max-width:380px){body{padding:14px 9px}.panel{padding:12px}.control{min-height:112px}.extra{grid-template-columns:repeat(2,1fr)}}
+/* draw */
+.board{position:relative;border-radius:14px;overflow:hidden;border:2px solid var(--line2);background:#000;aspect-ratio:160/128;touch-action:none}
+.board canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
+.pal{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.sw-c{width:34px;height:34px;border-radius:50%;border:3px solid transparent;box-shadow:0 0 0 1px #0008 inset}
+.sw-c.sel{border-color:#fff;transform:scale(1.08)}
+.sizes{display:flex;gap:8px}
+.size{width:44px;height:38px;border-radius:10px;background:var(--card2);border:1px solid var(--line2);display:grid;place-items:center}
+.size i{display:block;border-radius:50%;background:var(--text)}
+.size.sel{border-color:var(--cyan);background:#11384a}
+/* weather */
+.wx{display:flex;align-items:center;gap:14px;padding:12px;border-radius:14px;background:linear-gradient(135deg,#123d6b,#0b2140);border:1px solid var(--line2);margin-top:12px}
+.wx .ic{font-size:2.4rem}
+.wx .tp{font-size:1.9rem;font-weight:800}
+.wx .d{color:var(--muted);font-size:.84rem}
+/* notifications */
+.note{padding:12px;border-radius:12px;background:#0b1c2e;border:1px dashed var(--line2);color:var(--muted);font-size:.82rem;line-height:1.5;margin-bottom:12px}
+.fld{display:grid;gap:8px;margin-bottom:10px}
+/* nav */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:30;height:calc(var(--nav) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(5,1fr);background:rgba(8,20,34,.94);backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+nav button{background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--dim);font-size:.7rem;font-weight:700}
+nav button svg{width:22px;height:22px}
+nav button.active{color:var(--cyan)}
+.toast{position:fixed;left:50%;bottom:calc(var(--nav) + 16px);transform:translate(-50%,20px);opacity:0;background:#16314b;border:1px solid var(--line2);color:var(--text);padding:10px 16px;border-radius:12px;font-size:.86rem;z-index:40;transition:.25s;max-width:90vw;text-align:center;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.tiny{font-size:.76rem;color:var(--dim);margin-top:8px;line-height:1.45}
+@media(max-width:380px){main{padding:12px 10px calc(var(--nav) + 22px)}.card{padding:13px}.grid.g4{grid-template-columns:repeat(3,1fr)}}
 </style>
 </head>
 <body>
+<header>
+  <div class="logo"><i></i></div>
+  <div class="brand"><b>Desktop Pet</b><span id="status">Not connected</span></div>
+  <button class="pill" id="connectBtn"><span class="dot"></span><span id="connectLabel">Connect</span></button>
+</header>
+
 <main>
-  <h1>Desktop Pet Robot</h1>
-  <p class="sub">Bluetooth control · Reactions · Eye tracking · Clock · Calendar</p>
-  <section class="panel">
-    <div class="status"><span id="dot" class="dot"></span><span id="status">Not connected</span></div>
-    <button class="connect" id="connectBtn">Connect Bluetooth</button>
-    <p class="hint">Open this page from HTTPS in Chrome on Android. Turn on the ESP32; the picker filters for DesktopPet only. Do not pair from Android Bluetooth Settings.</p>
-  </section>
+<!-- ================= HOME ================= -->
+<section class="tab active" id="tab-home">
+  <div class="card">
+    <div class="mood-top">
+      <div><div class="sub" style="margin:0">Pet's mood</div><div class="mood-label" id="moodLabel">—</div></div>
+      <button class="btn" data-cmd="MOOD">Show on pet</button>
+    </div>
+    <div class="bars">
+      <div class="bar">Energy<div class="t"><div class="f" id="mE" style="background:var(--yellow)"></div></div><b id="vE">–</b></div>
+      <div class="bar">Happy<div class="t"><div class="f" id="mH" style="background:var(--pink)"></div></div><b id="vH">–</b></div>
+      <div class="bar">Bored<div class="t"><div class="f" id="mB" style="background:#8fb0d8"></div></div><b id="vB">–</b></div>
+      <div class="bar">Love<div class="t"><div class="f" id="mL" style="background:var(--red)"></div></div><b id="vL">–</b></div>
+    </div>
+  </div>
 
-  <section class="panel">
-    <h2>Main controls</h2>
+  <div class="card">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="3"/><path d="M8 12h.01M16 12h.01"/></svg>Main controls</h2>
+    <p class="sub">Left: tap = next reaction · <b>double-tap = notifications</b> · hold = calendar. Right: tap = reaction · hold = clock.</p>
     <div class="controls">
-      <button class="control" id="leftBtn" aria-label="Left button">
-        <span class="symbol">◀</span><strong>Left</strong>
-        <small>Tap: next reaction<br>Hold: calendar</small>
-      </button>
-      <button class="control" id="rightBtn" aria-label="Right button">
-        <span class="symbol">▶</span><strong>Right</strong>
-        <small>Tap: next reaction<br>Hold: full-screen clock</small>
-      </button>
+      <button class="control" id="leftBtn"><span class="sym">◀</span><strong>Left</strong><small>Tap · Double-tap · Hold</small></button>
+      <button class="control" id="rightBtn"><span class="sym">▶</span><strong>Right</strong><small>Tap · Hold</small></button>
     </div>
-    <p class="hint">Press and hold for about 650 ms to open a screen. A short tap changes the pet's reaction.</p>
-  </section>
+  </div>
 
-  <section class="panel">
-    <h2>Look pad</h2>
+  <div class="card">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg>Reactions</h2>
+    <div class="grid" id="reactions"></div>
+  </div>
+
+  <div class="card">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg>Quick actions</h2>
+    <div class="grid">
+      <button class="chip" data-cmd="BLINK"><span class="e">😉</span>Blink</button>
+      <button class="chip" data-cmd="SLEEP"><span class="e">😴</span>Sleep</button>
+      <button class="chip" data-cmd="BOTH"><span class="e">😵</span>Both</button>
+      <button class="chip" data-cmd="CLOCK"><span class="e">🕒</span>Clock</button>
+      <button class="chip" data-cmd="CALENDAR"><span class="e">📅</span>Calendar</button>
+      <button class="chip" data-cmd="NOTILIST"><span class="e">🔔</span>Alerts</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TALK ================= -->
+<section class="tab" id="tab-talk">
+  <div class="card">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Voice assistant</h2>
+    <p class="sub">Say "Hi", "Good morning", "I love you", "Let's dance", "What's the weather"… The pet animates and answers through your phone speaker.</p>
+    <div class="mic-wrap">
+      <button class="mic" id="micBtn" aria-label="Start listening"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <div class="mic-state" id="micState">Tap the mic to talk</div>
+    </div>
+    <div class="convo" id="convo"></div>
+    <label class="sw" style="margin-top:8px">Pet speaks out loud<input type="checkbox" class="tg" id="ttsOn" checked></label>
+    <label class="sw">Language
+      <select id="lang" style="width:auto">
+        <option value="en-IN">English (India)</option>
+        <option value="en-US">English (US)</option>
+        <option value="ta-IN">தமிழ் (Tamil)</option>
+      </select>
+    </label>
+    <div class="help" id="helpChips"></div>
+  </div>
+
+  <div class="card">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 11V7a5 5 0 0 1 10 0v4M5 11h14v10H5z"/></svg>Animations</h2>
+    <p class="sub">Full scenes with head movement, waving hand, speech bubble and talking lips.</p>
+    <div class="grid" id="scenes"></div>
+  </div>
+
+  <div class="card">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Make the pet say</h2>
+    <div class="row"><input type="text" id="sayText" class="grow" maxlength="44" placeholder="Type a message…"><button class="btn primary" id="sayBtn">Say</button></div>
+  </div>
+</section>
+
+<!-- ================= SENSE ================= -->
+<section class="tab" id="tab-sense">
+  <div class="card">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/></svg>Face tracking</h2>
+    <p class="sub">Place the phone next to the pet with the front camera facing you. The pet's eyes follow your face and it greets you when you sit down.</p>
+    <div class="cam"><video id="video" playsinline muted></video><canvas id="camOverlay"></canvas><div class="ph" id="camPh">Camera is off</div></div>
+    <div class="row" style="margin-top:12px"><button class="btn primary grow" id="camBtn">Start camera</button></div>
+    <label class="sw">Flip left / right<input type="checkbox" class="tg" id="camFlip"></label>
+    <div class="tiny" id="camState"></div>
+  </div>
+
+  <div class="card">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>Clap & noise</h2>
+    <p class="sub">Clap → surprised look. Loud noise → scared. Music mode → the pet dances.</p>
+    <div class="meter"><i id="lvl"></i><b id="thrMark"></b></div>
+    <div class="row" style="margin-top:12px"><button class="btn primary grow" id="soundBtn">Start listening</button></div>
+    <label class="sw">Music dance mode<input type="checkbox" class="tg" id="musicMode"></label>
+    <label class="sw" style="display:block">Clap sensitivity<input type="range" id="sens" min="1" max="10" value="6"></label>
+  </div>
+
+  <div class="card">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>Phone motion</h2>
+    <label class="sw"><span>Shake to make it dizzy<small>Shake the phone hard 2–3 times</small></span><input type="checkbox" class="tg" id="shakeOn"></label>
+    <label class="sw"><span>Tilt to steer the eyes<small>Hold flat and tap Calibrate first</small></span><input type="checkbox" class="tg" id="tiltOn"></label>
+    <button class="btn" id="calBtn" style="width:100%;margin-top:6px">Calibrate tilt</button>
+  </div>
+
+  <div class="card">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>Look pad</h2>
     <div id="pad"><div id="puck"></div></div>
-    <p class="note">Touch and drag: the pet's eyes follow your finger. Let go and they return to normal.</p>
-  </section>
+  </div>
+</section>
 
-  <section class="panel">
-    <h2>Reactions</h2>
-    <div class="extra" id="reactions"></div>
-  </section>
-
-  <section class="panel">
-    <h2>Quick actions</h2>
-    <div class="extra">
-      <button data-cmd="BLINK">😉 Blink</button>
-      <button data-cmd="SLEEP">😴 Sleep</button>
-      <button data-cmd="BOTH">😵 Both pressed</button>
-      <button data-cmd="CLOCK">🕒 Clock</button>
-      <button data-cmd="CALENDAR">📅 Calendar</button>
-      <button data-cmd="HAPPY">😊 Happy</button>
+<!-- ================= DRAW ================= -->
+<section class="tab" id="tab-draw">
+  <div class="card">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Draw on the pet</h2>
+    <p class="sub">Your drawing appears live on the pet's screen. Tap Done to show it off.</p>
+    <div class="board" id="board"><canvas id="drawCanvas" width="320" height="256"></canvas></div>
+    <div class="pal" id="palette"></div>
+    <div class="row">
+      <div class="sizes" id="sizes"></div>
+      <div class="grow"></div>
     </div>
-    <p class="note">Normal mode shows the pet only. Clock and calendar appear only when requested.</p>
-  </section>
+    <div class="grid" style="margin-top:12px">
+      <button class="btn" id="drawStart">New</button>
+      <button class="btn warn" id="drawClear">Clear</button>
+      <button class="btn primary" id="drawDone">Done</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MORE ================= -->
+<section class="tab" id="tab-more">
+  <div class="card">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4.5 13 3 3 0 0 0 6 19z"/></svg>Weather</h2>
+    <div class="row"><input type="text" id="city" class="grow" placeholder="City (e.g. Chennai)"><button class="btn" id="gpsBtn" title="Use my location">📍</button><button class="btn primary" id="wxBtn">Send</button></div>
+    <div class="wx" id="wxCard" hidden><div class="ic" id="wxIc"></div><div><div class="tp" id="wxTp"></div><div class="d" id="wxD"></div></div></div>
+    <label class="sw" style="margin-top:6px"><span>Auto-update every 30 min<small>Also sends the weather on connect</small></span><input type="checkbox" class="tg" id="wxAuto"></label>
+  </div>
+
+  <div class="card">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>Notifications</h2>
+    <div class="note"><b>Double-tap Left</b> opens the notification centre on the pet. A web page cannot read your Android notifications. Mirroring WhatsApp, calls and SMS needs a small Android companion app, which can be added next. Until then you can send alerts from here.</div>
+    <div class="fld">
+      <select id="nApp"><option>WhatsApp</option><option>Phone</option><option>Messages</option><option>Gmail</option><option>Calendar</option><option>Reminder</option></select>
+      <input type="text" id="nTitle" maxlength="38" placeholder="Title (e.g. Amma)">
+      <input type="text" id="nText" maxlength="98" placeholder="Message">
+    </div>
+    <div class="grid">
+      <button class="btn primary" id="nSend">Send</button>
+      <button class="btn" data-cmd="NOTILIST">Open</button>
+      <button class="btn warn" data-cmd="NOTICLR">Clear</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Settings</h2>
+    <div class="fld"><input type="text" id="ownerName" maxlength="18" placeholder="Your name (the pet greets you with it)"></div>
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <button class="btn primary" id="nameBtn">Save name</button>
+      <button class="btn" id="timeBtn">Sync time</button>
+    </div>
+    <p class="tiny">The time is synced automatically every time you connect, so the clock stays correct even without the RTC battery.</p>
+  </div>
+</section>
 </main>
+
+<nav>
+  <button class="active" data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 12 3l9 8v10H3z"/><path d="M9 21v-6h6v6"/></svg>Home</button>
+  <button data-tab="talk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Talk</button>
+  <button data-tab="sense"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Sense</button>
+  <button data-tab="draw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Draw</button>
+  <button data-tab="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>More</button>
+</nav>
+<div class="toast" id="toast"></div>
+
 <script>
 (() => {
-  "use strict";
-  const SERVICE_UUID = "12345678-1234-1234-1234-1234567890ab";
-  const CHARACTERISTIC_UUID = "abcdefab-1234-1234-1234-abcdefabcdef";
-  const HOLD_MS = 650;
-  const REACTIONS = ["😊 Happy","🤩 Excited","😮 Surprised","🤨 Curious","😜 Playful","😍 Love",
-    "😳 Shy","😎 Proud","🤔 Thinking","😂 Laughing","🤭 Tickled","😱 Scared",
-    "🥱 Bored","😢 Sad","😠 Angry","😵 Confused","😴 Sleepy"];
+"use strict";
+const SERVICE_UUID = "12345678-1234-1234-1234-1234567890ab";
+const CHARACTERISTIC_UUID = "abcdefab-1234-1234-1234-abcdefabcdef";
+const HOLD_MS = 650, DOUBLE_MS = 300;
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("pet." + k); return v === null ? d : v; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("pet." + k, v); } catch {} }
+};
 
-  let device = null, characteristic = null, busy = false;
-  let chain = Promise.resolve();
-  let connectedServer = null;
+// ---------------------------------------------------------------- UI helpers
+let toastTimer = null;
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
+}
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x === b));
+  document.querySelectorAll(".tab").forEach(s => s.classList.toggle("active", s.id === "tab-" + b.dataset.tab));
+  window.scrollTo({ top: 0 });
+}));
 
-  const statusEl = document.getElementById("status");
-  const dotEl = document.getElementById("dot");
-  const connectBtn = document.getElementById("connectBtn");
+// ---------------------------------------------------------------- Bluetooth
+let device = null, characteristic = null, busy = false, chain = Promise.resolve(), pending = 0;
+const connectBtn = $("connectBtn");
 
-  function setStatus(message, connected = false) {
-    statusEl.textContent = message;
-    dotEl.classList.toggle("on", connected);
-    connectBtn.textContent = connected ? "Disconnect" : "Connect Bluetooth";
-  }
+function setStatus(message, connected) {
+  $("status").textContent = message;
+  connectBtn.classList.toggle("on", !!connected);
+  $("connectLabel").textContent = connected ? "Connected" : "Connect";
+}
+const isConnected = () => !!(characteristic && device && device.gatt && device.gatt.connected);
 
-  function resetConnection(message = "Disconnected") {
+async function connect() {
+  if (busy) return;
+  if (isConnected()) { device.gatt.disconnect(); return; }
+  if (!window.isSecureContext) { setStatus("Open this page over HTTPS (GitHub Pages)", false); return; }
+  if (!navigator.bluetooth) { setStatus("Web Bluetooth unavailable — use Chrome on Android", false); return; }
+  busy = true; connectBtn.disabled = true;
+  try {
+    setStatus("Searching for DesktopPet…", false);
+    device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID] }], optionalServices: [SERVICE_UUID] });
+    device.removeEventListener("gattserverdisconnected", onDisconnect);
+    device.addEventListener("gattserverdisconnected", onDisconnect);
+    setStatus("Connecting…", false);
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE_UUID);
+    characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+    const p = characteristic.properties;
+    if (!p.write && !p.writeWithoutResponse) throw new Error("Characteristic is not writable — check the firmware");
+    if (p.notify) {
+      characteristic.addEventListener("characteristicvaluechanged", onNotify);
+      try { await characteristic.startNotifications(); } catch (e) { console.warn("notify", e); }
+    }
+    setStatus("Connected to " + (device.name || "DesktopPet"), true);
+    const name = store.get("name", "");
+    if (name) await write("NAME " + name, true);
+    await syncTime(true);
+    await write("HELLO", true);
+    if ($("wxAuto").checked) setTimeout(() => sendWeather(true), 4500);
+  } catch (err) {
+    console.error(err);
     characteristic = null;
-    connectedServer = null;
-    setStatus(message, false);
-  }
+    const map = { NotFoundError: "DesktopPet not found — is it powered on?", SecurityError: "Bluetooth blocked — open via HTTPS in Chrome",
+      NotSupportedError: "Service not found — check firmware UUIDs", NetworkError: "Connection failed — reset the ESP32 and retry",
+      AbortError: "Selection cancelled" };
+    setStatus(map[err && err.name] || ("Bluetooth error: " + (err && err.message || err)), false);
+  } finally { busy = false; connectBtn.disabled = false; }
+}
+function onDisconnect() { characteristic = null; setStatus("Disconnected — tap Connect", false); }
 
-  async function connect() {
-    if (busy) return;
-    if (device?.gatt?.connected) {
-      device.gatt.disconnect();
-      resetConnection();
-      return;
-    }
-    if (!window.isSecureContext) {
-      setStatus("Open this page from an HTTPS website (for example GitHub Pages).", false);
-      return;
-    }
-    if (!navigator.bluetooth) {
-      setStatus("Web Bluetooth unavailable. Use Chrome on Android with Bluetooth enabled.", false);
-      return;
-    }
+function write(text, quiet, fast) {
+  if (!isConnected()) { if (!quiet) toast("Not connected — tap Connect first"); return Promise.resolve(false); }
+  pending++;
+  chain = chain.catch(() => {}).then(async () => {
+    const ch = characteristic;
+    if (!ch) throw new Error("Bluetooth disconnected");
+    const bytes = new TextEncoder().encode(text);
+    if (fast && ch.properties.writeWithoutResponse && ch.writeValueWithoutResponse) await ch.writeValueWithoutResponse(bytes);
+    else if (ch.properties.write && ch.writeValueWithResponse) await ch.writeValueWithResponse(bytes);
+    else if (ch.writeValueWithoutResponse) await ch.writeValueWithoutResponse(bytes);
+    else await ch.writeValue(bytes);
+    return true;
+  }).catch(err => { console.error("write", err); if (!quiet) toast("Send failed: " + (err.message || err)); return false; })
+    .finally(() => { pending--; });
+  return chain;
+}
+const send = (c) => write(c, false);
 
-    busy = true;
-    connectBtn.disabled = true;
-    try {
-      setStatus("Searching for DesktopPet…", false);
-      // Filter by the custom service UUID. This avoids showing nearby earbuds,
-      // watches and unrelated BLE devices in the picker.
-      device = await navigator.bluetooth.requestDevice({
-        filters: [{ services: [SERVICE_UUID] }],
-        optionalServices: [SERVICE_UUID]
-      });
+// mood notifications "M e h b l"
+function onNotify(e) {
+  const txt = new TextDecoder().decode(e.target.value);
+  const m = txt.match(/^M (\d+) (\d+) (\d+) (\d+)/);
+  if (!m) return;
+  const [E, H, B, L] = m.slice(1).map(Number);
+  [["E", E], ["H", H], ["B", B], ["L", L]].forEach(([k, v]) => { $("m" + k).style.width = v + "%"; $("v" + k).textContent = v; });
+  let label = "Calm";
+  if (E < 20) label = "Sleepy 😴"; else if (B > 75) label = "Bored 🥱"; else if (H > 75 && L > 70) label = "Loving 🥰";
+  else if (H > 75) label = "Joyful 😄"; else if (H < 30) label = "Lonely 🥺"; else if (E > 80 && H > 55) label = "Playful 😜"; else label = "Calm 🙂";
+  $("moodLabel").textContent = label;
+}
 
-      device.removeEventListener("gattserverdisconnected", handleDisconnect);
-      device.addEventListener("gattserverdisconnected", handleDisconnect);
-      setStatus("Connecting to " + (device.name || "ESP32") + "…", false);
-      connectedServer = await device.gatt.connect();
-      const service = await connectedServer.getPrimaryService(SERVICE_UUID);
-      characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+async function syncTime(quiet) {
+  const d = new Date();
+  const ok = await write(`TIME ${d.getFullYear()} ${d.getMonth() + 1} ${d.getDate()} ${d.getHours()} ${d.getMinutes()} ${d.getSeconds()}`, quiet);
+  if (ok && !quiet) toast("Time synced ✓");
+  return ok;
+}
 
-      const props = characteristic.properties;
-      if (!props.write && !props.writeWithoutResponse) {
-        throw new Error("The ESP32 characteristic does not allow writes. Check the ESP32 BLE firmware.");
-      }
-      setStatus("Connected to " + (device.name || "DesktopPet"), true);
-      // A harmless known command confirms the write path and should show a happy face.
-      await write("HAPPY", true);
-      setStatus("Connected to " + (device.name || "DesktopPet"), true);
-    } catch (err) {
-      console.error("Bluetooth connection error:", err);
-      characteristic = null;
-      const msg = err?.message || String(err);
-      if (err?.name === "NotFoundError") {
-        setStatus("DesktopPet not found. Check that the ESP32 is powered on and BLE is advertising.", false);
-      } else if (err?.name === "SecurityError") {
-        setStatus("Bluetooth blocked. Open this page using HTTPS in Chrome.", false);
-      } else if (err?.name === "NotSupportedError") {
-        setStatus("BLE service/characteristic not supported. Check the ESP32 firmware UUIDs.", false);
-      } else if (err?.name === "NetworkError") {
-        setStatus("BLE connection failed. Reset ESP32 and try again.", false);
-      } else if (err?.name === "AbortError") {
-        setStatus("Bluetooth selection cancelled.", false);
-      } else {
-        setStatus("Bluetooth error: " + msg, false);
-      }
-    } finally {
-      busy = false;
-      connectBtn.disabled = false;
-    }
-  }
-
-  function handleDisconnect() {
-    characteristic = null;
-    connectedServer = null;
-    setStatus("Disconnected — tap Connect Bluetooth to retry", false);
-  }
-
-  function write(text, quiet = false) {
-    if (!characteristic || !device?.gatt?.connected) {
-      if (!quiet) setStatus("Not connected. Tap Connect Bluetooth first.", false);
-      return Promise.resolve(false);
-    }
-    // Serialize GATT writes; rapid look-pad updates must not overlap.
-    chain = chain.catch(() => {}).then(async () => {
-      if (!characteristic || !device?.gatt?.connected) throw new Error("Bluetooth disconnected");
-      const ch = characteristic;
-      const bytes = new TextEncoder().encode(text);
-      if (ch.writeValueWithResponse && ch.properties.write) {
-        await ch.writeValueWithResponse(bytes);
-      } else if (ch.writeValueWithoutResponse && ch.properties.writeWithoutResponse) {
-        await ch.writeValueWithoutResponse(bytes);
-      } else if (ch.writeValue) {
-        await ch.writeValue(bytes); // fallback for older Android Chrome versions
-      } else {
-        throw new Error("This browser cannot write to the BLE characteristic");
-      }
-      if (!quiet) setStatus("Connected · sent " + text, true);
-      return true;
-    }).catch(err => {
-      console.error("BLE write error:", err);
-      if (!quiet) setStatus("Command failed: " + (err?.message || err), false);
-      return false;
-    });
-    return chain;
-  }
-  const sendCommand = (c) => write(c, false);
-
-  function bindTapHold(button, shortCommand, longCommand) {
-    let timer = null, longFired = false, pointerDown = false;
-    const clear = () => { if (timer !== null) clearTimeout(timer); timer = null; pointerDown = false; };
-    button.addEventListener("pointerdown", (event) => {
-      if (event.pointerType === "mouse" && event.button !== 0) return;
-      event.preventDefault();
-      pointerDown = true; longFired = false;
-      timer = setTimeout(() => { if (!pointerDown) return; longFired = true; sendCommand(longCommand); }, HOLD_MS);
-    });
-    button.addEventListener("pointerup", (event) => {
-      event.preventDefault();
-      if (!pointerDown) return;
-      clear();
-      if (!longFired) sendCommand(shortCommand);
-    });
-    button.addEventListener("pointercancel", clear);
-    button.addEventListener("contextmenu", (event) => event.preventDefault());
-    button.addEventListener("pointerleave", (event) => {
-      if (pointerDown && event.pointerType !== "touch") clear();
-    });
-  }
-
-  // ---- look pad: sends "LOOK x y" (-1..1) at most ~10 times a second
-  const pad = document.getElementById("pad");
-  const puck = document.getElementById("puck");
-  let lookTimer = null, pending = null, dragging = false;
-
-  function flushLook() {
-    lookTimer = null;
-    if (pending) { write("LOOK " + pending, true); pending = null; }
-  }
-  function queueLook(x, y) {
-    pending = x.toFixed(2) + " " + y.toFixed(2);
-    if (!lookTimer) lookTimer = setTimeout(flushLook, 100);
-  }
-  function padMove(event) {
-    const r = pad.getBoundingClientRect();
-    const x = Math.max(-1, Math.min(1, ((event.clientX - r.left) / r.width) * 2 - 1));
-    const y = Math.max(-1, Math.min(1, ((event.clientY - r.top) / r.height) * 2 - 1));
-    puck.style.left = ((x + 1) / 2 * 100) + "%";
-    puck.style.top = ((y + 1) / 2 * 100) + "%";
-    queueLook(x, y);
-  }
-  pad.addEventListener("pointerdown", (e) => {
-    e.preventDefault(); dragging = true; pad.classList.add("active");
-    pad.setPointerCapture(e.pointerId); padMove(e);
+// ---------------------------------------------------------------- main controls
+function bindButton(btn, opts) {
+  let timer = null, longFired = false, down = false, lastTap = 0, singleTimer = null;
+  btn.addEventListener("pointerdown", e => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    e.preventDefault(); down = true; longFired = false;
+    timer = setTimeout(() => { if (down) { longFired = true; navigator.vibrate && navigator.vibrate(25); send(opts.hold); } }, HOLD_MS);
   });
-  pad.addEventListener("pointermove", (e) => { if (dragging) { e.preventDefault(); padMove(e); } });
-  const padEnd = () => {
-    if (!dragging) return;
-    dragging = false; pad.classList.remove("active");
-    puck.style.left = "50%"; puck.style.top = "50%";
-    queueLook(0, 0);
+  btn.addEventListener("pointerup", e => {
+    e.preventDefault();
+    if (!down) return;
+    down = false; clearTimeout(timer);
+    if (longFired) return;
+    if (!opts.double) { send(opts.tap); return; }
+    const now = Date.now();
+    if (now - lastTap < DOUBLE_MS) { clearTimeout(singleTimer); lastTap = 0; navigator.vibrate && navigator.vibrate([15, 40, 15]); send(opts.double); return; }
+    lastTap = now;
+    singleTimer = setTimeout(() => send(opts.tap), DOUBLE_MS);
+  });
+  btn.addEventListener("pointercancel", () => { down = false; clearTimeout(timer); });
+  btn.addEventListener("contextmenu", e => e.preventDefault());
+}
+bindButton($("leftBtn"), { tap: "LEFT", double: "NOTILIST", hold: "CALENDAR" });
+bindButton($("rightBtn"), { tap: "RIGHT", hold: "CLOCK" });
+document.querySelectorAll("[data-cmd]").forEach(b => b.addEventListener("click", () => send(b.dataset.cmd)));
+connectBtn.addEventListener("click", connect);
+
+const REACTIONS = [["😊","Happy"],["🤩","Excited"],["😮","Surprised"],["🤨","Curious"],["😜","Playful"],["😍","Love"],
+  ["😳","Shy"],["😎","Proud"],["🤔","Thinking"],["😂","Laughing"],["🤭","Tickled"],["😱","Scared"],
+  ["🥱","Bored"],["😢","Sad"],["😠","Angry"],["😵","Confused"],["😴","Sleepy"]];
+REACTIONS.forEach(([e, n], i) => {
+  const b = document.createElement("button"); b.className = "chip";
+  b.innerHTML = `<span class="e">${e}</span>${n}`;
+  b.addEventListener("click", () => send("REACT " + i));
+  $("reactions").appendChild(b);
+});
+
+// ---------------------------------------------------------------- scenes + voice
+const ownerName = () => store.get("name", "") || "friend";
+const SCENES = [
+  ["👋", "Hi", "HI", () => `Hi ${ownerName()}!`],
+  ["🙋", "Bye", "BYE", () => "Bye bye! See you soon."],
+  ["❤️", "Love", "LOVE", () => "Love you too!"],
+  ["💃", "Dance", "DANCE", () => "Let's dance!"],
+  ["🌙", "Good night", "NIGHT", () => "Good night! Sweet dreams."],
+  ["☀️", "Morning", "MORNING", () => "Good morning! Have a great day."],
+  ["🙏", "Thanks", "THANKS", () => "You're welcome!"],
+  ["👍", "Yes", "YES", () => "Yes!"],
+  ["🙅", "No", "NO", () => "Nope!"],
+  ["🤯", "Wow", "WOW", () => "Wow!"],
+  ["💬", "How are you", "HOWRU", () => "I'm great, thanks for asking!"],
+];
+SCENES.forEach(([e, n, key, say]) => {
+  const b = document.createElement("button"); b.className = "chip";
+  b.innerHTML = `<span class="e">${e}</span>${n}`;
+  b.addEventListener("click", () => { scene(key, null, say()); });
+  $("scenes").appendChild(b);
+});
+function scene(key, bubble, speech, reactIdx) {
+  let c = "ANIM " + key;
+  if (bubble || reactIdx !== undefined) c += "|" + (bubble || "");
+  if (reactIdx !== undefined) c += "|" + reactIdx;
+  send(c);
+  if (speech) speak(speech);
+}
+$("sayBtn").addEventListener("click", () => {
+  const t = $("sayText").value.trim().replace(/\|/g, " ");
+  if (!t) return;
+  scene("SAY", t, t);
+  $("sayText").value = "";
+});
+
+// text to speech (the pet's voice)
+let speaking = false;
+function speak(text) {
+  addMsg("pet", text);
+  if (!$("ttsOn").checked || !window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = $("lang").value; u.pitch = 1.6; u.rate = 1.05;
+  const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.replace("_", "-").startsWith(u.lang.slice(0, 2)));
+  if (v) u.voice = v;
+  u.onstart = () => { speaking = true; if (rec && listening) try { rec.abort(); } catch {} };
+  u.onend = u.onerror = () => { speaking = false; if (listening) startRec(); };
+  speechSynthesis.speak(u);
+}
+function addMsg(who, text) {
+  const c = $("convo"), d = document.createElement("div");
+  d.className = "msg " + who; d.textContent = text; c.appendChild(d);
+  while (c.children.length > 6) c.removeChild(c.firstChild);
+}
+
+const JOKES = ["Why did the robot go on holiday? It needed to recharge!", "I'm reading a book about anti-gravity. I can't put it down!",
+  "Why was the computer cold? It left its Windows open!"];
+const EMO = { happy: 0, excited: 1, surprise: 2, curious: 3, playful: 4, shy: 6, proud: 7, think: 8, laugh: 9, scared: 11, bored: 12, sad: 13, angry: 14, confused: 15, sleepy: 16 };
+
+function handleSpeech(raw) {
+  const s = raw.toLowerCase();
+  const has = (re) => re.test(s);
+  const name = ownerName();
+  if (has(/good ?morning|காலை வணக்கம்/)) return scene("MORNING", null, `Good morning ${name}! Have a wonderful day.`);
+  if (has(/good ?night|இரவு வணக்கம்/)) return scene("NIGHT", null, "Good night! Sweet dreams.");
+  if (has(/\b(bye|goodbye|see you|tata)\b|போய் வரேன்/)) return scene("BYE", null, "Bye bye! Come back soon.");
+  if (has(/love you|i love|லவ் யூ/)) return scene("LOVE", null, "Aww, I love you too!");
+  if (has(/how are you|how do you feel|எப்படி இருக்க/)) return scene("HOWRU", null, "I'm great! Thanks for asking.");
+  if (has(/thank|nandri|நன்றி/)) return scene("THANKS", null, "You're welcome!");
+  if (has(/dance|party|music|song|ஆடு/)) return scene("DANCE", null, "Let's dance!");
+  if (has(/your name|who are you|உன் பெயர்/)) return scene("SAY", "I'm DesktopPet!", "I'm DesktopPet, your little desk buddy!");
+  if (has(/joke|funny|சிரிப்பு/)) { const j = JOKES[Math.floor(Math.random() * JOKES.length)]; return scene("SAY", "Haha!", j, 9); }
+  if (has(/weather|rain|temperature|climate|வானிலை|மழை/)) { sendWeather(false, true); return; }
+  if (has(/what.*time|time now|நேரம்/)) { send("CLOCK"); const d = new Date(); speak("It's " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })); return; }
+  if (has(/date|today|calendar|தேதி/)) { send("CALENDAR"); speak("Today is " + new Date().toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" })); return; }
+  if (has(/notification|messages|alerts/)) { send("NOTILIST"); speak("Here are your notifications."); return; }
+  if (has(/\bmood\b|feeling/)) { send("MOOD"); speak("Here is how I feel."); return; }
+  if (has(/go to sleep|sleep now|\bsleep\b|தூங்கு/)) return scene("NIGHT", "Sleepy...", "Okay, going to sleep.");
+  if (has(/wake up|எழுந்திரு/)) return scene("MORNING", "I'm awake!", "I'm awake!");
+  if (has(/\b(wow|amazing|awesome|super)\b/)) return scene("WOW", null, "Wow!");
+  if (has(/\b(yes|yeah|correct|ஆமா)\b/)) return scene("YES", null, "Yes!");
+  if (has(/\b(no|nope|illa)\b|இல்லை/)) return scene("NO", null, "Nope!");
+  if (has(/\b(hi|hello|hey|hai|vanakkam)\b|வணக்கம்|ஹாய்/)) return scene("HI", null, `Hi ${name}! Nice to see you.`);
+  for (const k in EMO) if (s.includes(k)) { send("REACT " + EMO[k]); speak("Okay!"); return; }
+  scene("SAY", "Hmm?", "Sorry, I didn't get that.", 15);
+}
+
+// speech recognition
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, listening = false;
+function startRec() {
+  if (!rec || speaking) return;
+  try { rec.lang = $("lang").value; rec.start(); } catch {}
+}
+if (SR) {
+  rec = new SR();
+  rec.continuous = false; rec.interimResults = false; rec.maxAlternatives = 1;
+  rec.onresult = (e) => {
+    const t = e.results[e.results.length - 1][0].transcript.trim();
+    if (!t) return;
+    addMsg("you", t); handleSpeech(t);
   };
-  pad.addEventListener("pointerup", padEnd);
-  pad.addEventListener("pointercancel", padEnd);
+  rec.onstart = () => { $("micState").textContent = "Listening…"; };
+  rec.onerror = (e) => { if (e.error === "not-allowed") { listening = false; updateMic(); toast("Microphone permission denied"); } };
+  rec.onend = () => { if (listening && !speaking) setTimeout(startRec, 250); else if (!listening) $("micState").textContent = "Tap the mic to talk"; };
+}
+function updateMic() { $("micBtn").classList.toggle("live", listening); $("micState").textContent = listening ? "Listening…" : "Tap the mic to talk"; }
+$("micBtn").addEventListener("click", () => {
+  if (!rec) { toast("Voice recognition needs Chrome on Android"); return; }
+  if (sound.on) { stopSound(); toast("Clap detection paused while talking"); }
+  listening = !listening; updateMic();
+  if (listening) startRec(); else try { rec.abort(); } catch {}
+});
+["Hi", "Good morning", "I love you", "Let's dance", "How are you", "Tell me a joke", "What's the weather", "What time is it", "Good night", "Vanakkam"]
+  .forEach(t => { const s = document.createElement("span"); s.textContent = "“" + t + "”"; $("helpChips").appendChild(s); });
 
-  // ---- reaction buttons: "REACT n"
-  const grid = document.getElementById("reactions");
-  REACTIONS.forEach((label, i) => {
-    const b = document.createElement("button");
-    b.textContent = label;
-    b.addEventListener("click", () => sendCommand("REACT " + i));
-    grid.appendChild(b);
-  });
+// ---------------------------------------------------------------- face tracking
+const cam = { on: false, stream: null, detector: null, native: null, raf: 0, lastSend: 0, lastLook: [0, 0], seenAt: 0, lostAt: 0, present: false };
+async function loadDetector() {
+  try {
+    const v = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs");
+    const fileset = await v.FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+    cam.detector = await v.FaceDetector.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite", delegate: "GPU" },
+      runningMode: "VIDEO", minDetectionConfidence: 0.5 });
+    return true;
+  } catch (e) {
+    console.warn("MediaPipe failed", e);
+    if ("FaceDetector" in window) { cam.native = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 1 }); return true; }
+    return false;
+  }
+}
+async function startCam() {
+  $("camState").textContent = "Loading face detector…";
+  if (!cam.detector && !cam.native && !(await loadDetector())) { $("camState").textContent = "Face detector could not load (needs internet)."; return; }
+  try {
+    cam.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+  } catch (e) { $("camState").textContent = "Camera permission denied."; return; }
+  const v = $("video"); v.srcObject = cam.stream; await v.play();
+  cam.on = true; $("camPh").hidden = true; $("camBtn").textContent = "Stop camera"; $("camBtn").classList.remove("primary");
+  $("camState").textContent = "Tracking… keep your face in view.";
+  loopCam();
+}
+function stopCam() {
+  cam.on = false; cancelAnimationFrame(cam.raf);
+  if (cam.stream) cam.stream.getTracks().forEach(t => t.stop());
+  $("camPh").hidden = false; $("camBtn").textContent = "Start camera"; $("camBtn").classList.add("primary");
+  $("camState").textContent = ""; write("LOOK 0 0", true);
+  const o = $("camOverlay"); o.getContext("2d").clearRect(0, 0, o.width, o.height);
+}
+async function loopCam() {
+  if (!cam.on) return;
+  const v = $("video"), o = $("camOverlay"), ctx = o.getContext("2d");
+  if (v.videoWidth && o.width !== v.videoWidth) { o.width = v.videoWidth; o.height = v.videoHeight; }
+  let box = null;
+  try {
+    if (cam.detector) {
+      const r = cam.detector.detectForVideo(v, performance.now());
+      if (r.detections && r.detections.length) { const b = r.detections[0].boundingBox; box = { x: b.originX, y: b.originY, w: b.width, h: b.height }; }
+    } else if (cam.native) {
+      const f = await cam.native.detect(v);
+      if (f.length) { const b = f[0].boundingBox; box = { x: b.x, y: b.y, w: b.width, h: b.height }; }
+    }
+  } catch (e) { console.warn(e); }
+  ctx.clearRect(0, 0, o.width, o.height);
+  const now = Date.now();
+  if (box && v.videoWidth) {
+    ctx.strokeStyle = "#2ee0ff"; ctx.lineWidth = 4; ctx.shadowColor = "#2ee0ff"; ctx.shadowBlur = 12;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(box.x, box.y, box.w, box.h, 18) : ctx.rect(box.x, box.y, box.w, box.h); ctx.stroke();
+    const cx = (box.x + box.w / 2) / v.videoWidth, cy = (box.y + box.h / 2) / v.videoHeight;
+    let x = (1 - 2 * cx) * 1.4, y = (2 * cy - 1) * 1.4;
+    if ($("camFlip").checked) x = -x;
+    x = Math.max(-1, Math.min(1, x)); y = Math.max(-1, Math.min(1, y));
+    if (!cam.present && now - cam.lostAt > 8000) write("SEEN", true);
+    cam.present = true; cam.seenAt = now;
+    const moved = Math.abs(x - cam.lastLook[0]) + Math.abs(y - cam.lastLook[1]) > 0.05;
+    if (moved && now - cam.lastSend > 120 && pending < 3) {
+      cam.lastSend = now; cam.lastLook = [x, y];
+      write(`LOOK ${x.toFixed(2)} ${y.toFixed(2)}`, true);
+    }
+  } else if (cam.present && now - cam.seenAt > 1500) {
+    cam.present = false; cam.lostAt = now; cam.lastLook = [0, 0];
+    write("LOOK 0 0", true);
+  }
+  cam.raf = requestAnimationFrame(loopCam);
+}
+$("camBtn").addEventListener("click", () => cam.on ? stopCam() : startCam());
 
-  connectBtn.addEventListener("click", connect);
-  bindTapHold(document.getElementById("leftBtn"), "LEFT", "CALENDAR");
-  bindTapHold(document.getElementById("rightBtn"), "RIGHT", "CLOCK");
-  document.querySelectorAll("[data-cmd]").forEach(button => {
-    button.addEventListener("click", () => sendCommand(button.dataset.cmd));
-  });
+// ---------------------------------------------------------------- clap / noise / music
+const sound = { on: false, ctx: null, stream: null, an: null, buf: null, floor: 0.01, prev: 0, lastClap: 0, loudSince: 0, lastLoud: 0, lastMusic: 0 };
+async function startSound() {
+  if (listening) { listening = false; updateMic(); try { rec.abort(); } catch {} toast("Voice paused while listening for claps"); }
+  try {
+    sound.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  } catch { toast("Microphone permission denied"); return; }
+  sound.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = sound.ctx.createMediaStreamSource(sound.stream);
+  sound.an = sound.ctx.createAnalyser(); sound.an.fftSize = 1024;
+  sound.buf = new Float32Array(sound.an.fftSize);
+  src.connect(sound.an);
+  sound.on = true; $("soundBtn").textContent = "Stop listening"; $("soundBtn").classList.remove("primary");
+  tickSound();
+}
+function stopSound() {
+  sound.on = false;
+  if (sound.stream) sound.stream.getTracks().forEach(t => t.stop());
+  if (sound.ctx) sound.ctx.close();
+  $("lvl").style.width = "0"; $("soundBtn").textContent = "Start listening"; $("soundBtn").classList.add("primary");
+}
+function tickSound() {
+  if (!sound.on) return;
+  sound.an.getFloatTimeDomainData(sound.buf);
+  let sum = 0, peak = 0;
+  for (const v of sound.buf) { sum += v * v; const a = Math.abs(v); if (a > peak) peak = a; }
+  const rms = Math.sqrt(sum / sound.buf.length), now = Date.now();
+  if (rms < sound.floor * 3) sound.floor = sound.floor * 0.995 + rms * 0.005;
+  const sens = +$("sens").value;                    // 1..10
+  const clapThr = 0.75 - sens * 0.06;                // peak threshold
+  $("lvl").style.width = Math.min(100, peak * 100) + "%";
+  $("thrMark").style.left = Math.min(100, clapThr * 100) + "%";
+  const sudden = rms > sound.prev * 2.2;
+  if (peak > clapThr && rms > sound.floor * 5 && sudden && now - sound.lastClap > 800) {
+    sound.lastClap = now; write("SOUND CLAP", true);
+  }
+  if (rms > 0.25) { if (!sound.loudSince) sound.loudSince = now; } else sound.loudSince = 0;
+  if (sound.loudSince && now - sound.loudSince > 600 && now - sound.lastLoud > 5000 && !$("musicMode").checked) {
+    sound.lastLoud = now; write("SOUND LOUD", true);
+  }
+  if ($("musicMode").checked && now - sound.lastMusic > 300) {
+    const lvl = Math.max(0, Math.min(1, (rms - sound.floor) * 8));
+    if (lvl > 0.12 && pending < 2) { sound.lastMusic = now; write("MUSIC " + lvl.toFixed(2), true); }
+  }
+  sound.prev = sound.prev * 0.7 + rms * 0.3;
+  requestAnimationFrame(tickSound);
+}
+$("soundBtn").addEventListener("click", () => sound.on ? stopSound() : startSound());
+
+// ---------------------------------------------------------------- shake / tilt
+const motion = { lastMag: 0, hits: [], lastShake: 0, g0: 0, b0: 0, g: 0, b: 0, lastTilt: 0 };
+async function motionPermission() {
+  const D = window.DeviceMotionEvent;
+  if (D && typeof D.requestPermission === "function") { try { return (await D.requestPermission()) === "granted"; } catch { return false; } }
+  return true;
+}
+window.addEventListener("devicemotion", e => {
+  if (!$("shakeOn").checked) return;
+  const a = e.accelerationIncludingGravity; if (!a) return;
+  const mag = Math.sqrt((a.x || 0) ** 2 + (a.y || 0) ** 2 + (a.z || 0) ** 2), now = Date.now();
+  if (Math.abs(mag - motion.lastMag) > 16) { motion.hits.push(now); }
+  motion.lastMag = mag;
+  motion.hits = motion.hits.filter(t => now - t < 900);
+  if (motion.hits.length >= 4 && now - motion.lastShake > 2500) {
+    motion.lastShake = now; motion.hits = [];
+    navigator.vibrate && navigator.vibrate(60);
+    write("SHAKE", true); toast("Whoaaa! 😵");
+  }
+});
+window.addEventListener("deviceorientation", e => {
+  motion.g = e.gamma || 0; motion.b = e.beta || 0;
+  if (!$("tiltOn").checked) return;
+  const now = Date.now();
+  if (now - motion.lastTilt < 120 || pending > 2) return;
+  motion.lastTilt = now;
+  const x = Math.max(-1, Math.min(1, (motion.g - motion.g0) / 30));
+  const y = Math.max(-1, Math.min(1, (motion.b - motion.b0) / 30));
+  write(`LOOK ${x.toFixed(2)} ${y.toFixed(2)}`, true);
+});
+$("shakeOn").addEventListener("change", async e => { if (e.target.checked && !(await motionPermission())) { e.target.checked = false; toast("Motion permission denied"); } });
+$("tiltOn").addEventListener("change", async e => {
+  if (e.target.checked) { if (!(await motionPermission())) { e.target.checked = false; return; } motion.g0 = motion.g; motion.b0 = motion.b; }
+  else write("LOOK 0 0", true);
+});
+$("calBtn").addEventListener("click", () => { motion.g0 = motion.g; motion.b0 = motion.b; toast("Tilt calibrated ✓"); });
+
+// ---------------------------------------------------------------- look pad
+(() => {
+  const pad = $("pad"), puck = $("puck");
+  let timer = null, pend = null, dragging = false;
+  const flush = () => { timer = null; if (pend) { write("LOOK " + pend, true); pend = null; } };
+  const queue = (x, y) => { pend = x.toFixed(2) + " " + y.toFixed(2); if (!timer) timer = setTimeout(flush, 100); };
+  const move = (e) => {
+    const r = pad.getBoundingClientRect();
+    const x = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width) * 2 - 1));
+    const y = Math.max(-1, Math.min(1, ((e.clientY - r.top) / r.height) * 2 - 1));
+    puck.style.left = ((x + 1) / 2 * 100) + "%"; puck.style.top = ((y + 1) / 2 * 100) + "%";
+    queue(x, y);
+  };
+  pad.addEventListener("pointerdown", e => { e.preventDefault(); dragging = true; pad.classList.add("active"); pad.setPointerCapture(e.pointerId); move(e); });
+  pad.addEventListener("pointermove", e => { if (dragging) { e.preventDefault(); move(e); } });
+  const end = () => { if (!dragging) return; dragging = false; pad.classList.remove("active"); puck.style.left = "50%"; puck.style.top = "50%"; queue(0, 0); };
+  pad.addEventListener("pointerup", end); pad.addEventListener("pointercancel", end);
+})();
+
+// ---------------------------------------------------------------- draw
+const PEN = ["#ffffff", "#00ffff", "#0080ff", "#ff00ff", "#ff0000", "#ffff00", "#00ff00", "#ffa500"];
+let penC = 1, penW = 3;
+const dc = $("drawCanvas"), dctx = dc.getContext("2d");
+function clearBoard() { dctx.fillStyle = "#000"; dctx.fillRect(0, 0, dc.width, dc.height); }
+clearBoard();
+PEN.forEach((c, i) => {
+  const b = document.createElement("button"); b.className = "sw-c" + (i === penC ? " sel" : ""); b.style.background = c;
+  b.addEventListener("click", () => { penC = i; document.querySelectorAll(".sw-c").forEach((x, j) => x.classList.toggle("sel", j === i)); });
+  $("palette").appendChild(b);
+});
+[1, 2, 3, 4].forEach(w => {
+  const b = document.createElement("button"); b.className = "size" + (w === penW ? " sel" : "");
+  b.innerHTML = `<i style="width:${w * 4}px;height:${w * 4}px"></i>`;
+  b.addEventListener("click", () => { penW = w; document.querySelectorAll(".size").forEach(x => x.classList.toggle("sel", x === b)); });
+  $("sizes").appendChild(b);
+});
+let drawing = false, last = null, started = false;
+function boardPoint(e) {
+  const r = dc.getBoundingClientRect();
+  return [Math.max(0, Math.min(159, Math.round((e.clientX - r.left) / r.width * 159))), Math.max(0, Math.min(127, Math.round((e.clientY - r.top) / r.height * 127)))];
+}
+function localLine(a, b) {
+  dctx.strokeStyle = PEN[penC]; dctx.lineWidth = Math.max(2, penW * 2); dctx.lineCap = "round";
+  dctx.beginPath(); dctx.moveTo(a[0] * 2 + 1, a[1] * 2 + 1); dctx.lineTo(b[0] * 2 + 1, b[1] * 2 + 1); dctx.stroke();
+}
+function sendSeg(a, b) { write(`D${a[0]},${a[1]},${b[0]},${b[1]},${penC * 10 + penW}`, true, true); }
+dc.addEventListener("pointerdown", e => {
+  e.preventDefault(); dc.setPointerCapture(e.pointerId);
+  if (!started) { write("DRAW", true); started = true; }
+  drawing = true; last = boardPoint(e);
+  localLine(last, last); sendSeg(last, last);
+});
+dc.addEventListener("pointermove", e => {
+  if (!drawing) return; e.preventDefault();
+  const p = boardPoint(e);
+  if (Math.hypot(p[0] - last[0], p[1] - last[1]) < 2) return;
+  localLine(last, p);
+  if (pending < 6) { sendSeg(last, p); last = p; }   // when busy, the next move sends one longer segment
+});
+const endStroke = (e) => {
+  if (!drawing) return; drawing = false;
+  const p = boardPoint(e);
+  if (p[0] !== last[0] || p[1] !== last[1]) { localLine(last, p); sendSeg(last, p); }
+};
+dc.addEventListener("pointerup", endStroke); dc.addEventListener("pointercancel", endStroke);
+$("drawStart").addEventListener("click", () => { clearBoard(); started = true; send("DRAW"); });
+$("drawClear").addEventListener("click", () => { clearBoard(); send("DCLR"); });
+$("drawDone").addEventListener("click", () => { started = false; send("DEND"); toast("Nice art! 🎨"); });
+
+// ---------------------------------------------------------------- weather (Open-Meteo, no key needed)
+$("city").value = store.get("city", "");
+$("wxAuto").checked = store.get("wxAuto", "0") === "1";
+$("wxAuto").addEventListener("change", e => store.set("wxAuto", e.target.checked ? "1" : "0"));
+let coords = null;
+const WX_ICON = ["☀️", "⛅", "☁️", "🌫️", "🌧️", "⛈️", "❄️"];
+const WX_NAME = ["Clear", "Partly cloudy", "Cloudy", "Foggy", "Rainy", "Thunderstorm", "Snow"];
+function mapCode(c) {
+  if (c === 0) return 0; if (c <= 2) return 1; if (c === 3) return 2; if (c === 45 || c === 48) return 3;
+  if (c >= 95) return 5; if ((c >= 71 && c <= 77) || c === 85 || c === 86) return 6; return 4;
+}
+async function locate() {
+  const city = $("city").value.trim();
+  if (city) {
+    const r = await fetch("https://geocoding-api.open-meteo.com/v1/search?count=1&name=" + encodeURIComponent(city)).then(r => r.json());
+    if (!r.results || !r.results.length) throw new Error("City not found");
+    const g = r.results[0]; return { lat: g.latitude, lon: g.longitude, name: g.name };
+  }
+  if (coords) return coords;
+  throw new Error("Type a city or tap 📍");
+}
+$("gpsBtn").addEventListener("click", () => {
+  if (!navigator.geolocation) return toast("Location not available");
+  navigator.geolocation.getCurrentPosition(async p => {
+    coords = { lat: p.coords.latitude, lon: p.coords.longitude, name: "Here" };
+    try {
+      const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${coords.lat}&longitude=${coords.lon}&localityLanguage=en`).then(r => r.json());
+      coords.name = r.city || r.locality || "Here";
+    } catch {}
+    $("city").value = ""; $("city").placeholder = "📍 " + coords.name; toast("Location set: " + coords.name);
+    sendWeather();
+  }, () => toast("Location permission denied"), { timeout: 10000 });
+});
+async function sendWeather(quiet, speakIt) {
+  try {
+    const loc = await locate();
+    store.set("city", $("city").value.trim());
+    const u = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`;
+    const r = await fetch(u).then(r => r.json());
+    const code = mapCode(r.current.weather_code), day = r.current.is_day ? 1 : 0;
+    const t = Math.round(r.current.temperature_2m), hi = Math.round(r.daily.temperature_2m_max[0]), lo = Math.round(r.daily.temperature_2m_min[0]);
+    const city = (loc.name || "").replace(/\|/g, " ").slice(0, 22);
+    $("wxCard").hidden = false;
+    $("wxIc").textContent = (code === 0 && !day) ? "🌙" : WX_ICON[code];
+    $("wxTp").textContent = t + "°C";
+    $("wxD").textContent = `${(code === 0 && !day) ? "Clear night" : WX_NAME[code]} · H ${hi}° L ${lo}° · ${city}`;
+    await write(`WX ${code} ${day} ${t} ${hi} ${lo}|${city}`, quiet);
+    if (speakIt) speak(`It's ${t} degrees and ${WX_NAME[code].toLowerCase()} in ${city}.` + (code === 4 || code === 5 ? " Take an umbrella!" : ""));
+  } catch (e) { if (!quiet) toast("Weather: " + (e.message || e)); }
+}
+$("wxBtn").addEventListener("click", () => sendWeather(false));
+setInterval(() => { if ($("wxAuto").checked && isConnected()) sendWeather(true); }, 30 * 60 * 1000);
+
+// ---------------------------------------------------------------- notifications + settings
+$("nSend").addEventListener("click", () => {
+  const clean = (s) => s.replace(/\|/g, " ").trim();
+  const title = clean($("nTitle").value), text = clean($("nText").value);
+  if (!title && !text) return toast("Write a title or message");
+  send(`NOTI ${$("nApp").value}|${title}|${text}`);
+  $("nTitle").value = ""; $("nText").value = ""; toast("Sent to pet 🔔");
+});
+$("ownerName").value = store.get("name", "");
+$("nameBtn").addEventListener("click", () => {
+  const n = $("ownerName").value.trim().slice(0, 18);
+  store.set("name", n);
+  if (n) send("NAME " + n);
+  toast(n ? "Hi " + n + "! 👋" : "Name cleared");
+});
+$("timeBtn").addEventListener("click", () => syncTime(false));
+$("lang").value = store.get("lang", "en-IN");
+$("lang").addEventListener("change", e => store.set("lang", e.target.value));
+if (window.speechSynthesis) speechSynthesis.getVoices();
+document.addEventListener("visibilitychange", () => { if (document.hidden && cam.on) stopCam(); });
 })();
 </script>
 </body>
