@@ -11,6 +11,7 @@
 body{margin:0;background:radial-gradient(ellipse at top,#112d42 0,#07121f 55%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;padding:20px 14px 30px}
 main{max-width:720px;margin:auto}
 h1{text-align:center;font-size:1.55rem;margin:4px 0 5px;letter-spacing:.3px}
+h2{font-size:1.05rem;margin:0 0 12px}
 .sub{text-align:center;color:var(--muted);margin:0 0 18px;font-size:.92rem}
 .panel{background:rgba(16,31,48,.92);border:1px solid #24465c;border-radius:20px;padding:16px;margin:12px 0;box-shadow:0 12px 28px #0005}
 .status{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:.92rem}
@@ -29,13 +30,19 @@ button{font:inherit;border:0;cursor:pointer;touch-action:manipulation;-webkit-ta
 .extra button{padding:12px 6px;border-radius:12px;background:#17334a;border:1px solid #28556c;color:var(--text);font-weight:700}
 .extra button:active{background:#225777}
 .note{color:var(--muted);font-size:.82rem;line-height:1.45;margin:10px 0 0}
+#pad{position:relative;height:170px;border-radius:16px;background:radial-gradient(circle at center,#12354d 0,#0a1c2c 70%);border:1px solid #28556c;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden}
+#pad::before,#pad::after{content:"";position:absolute;background:#28556c55}
+#pad::before{left:50%;top:0;bottom:0;width:1px}
+#pad::after{top:50%;left:0;right:0;height:1px}
+#puck{position:absolute;width:26px;height:26px;border-radius:50%;background:var(--cyan);box-shadow:0 0 16px var(--cyan);left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;transition:left .12s,top .12s}
+#pad.active #puck{transition:none}
 @media(max-width:380px){body{padding:14px 9px}.panel{padding:12px}.control{min-height:112px}.extra{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
 <main>
   <h1>Desktop Pet Robot</h1>
-  <p class="sub">Bluetooth control · Reactions · Clock · Calendar</p>
+  <p class="sub">Bluetooth control · Reactions · Eye tracking · Clock · Calendar</p>
   <section class="panel">
     <div class="status"><span id="dot" class="dot"></span><span id="status">Not connected</span></div>
     <button class="connect" id="connectBtn">Connect Bluetooth</button>
@@ -43,7 +50,7 @@ button{font:inherit;border:0;cursor:pointer;touch-action:manipulation;-webkit-ta
   </section>
 
   <section class="panel">
-    <h2 style="font-size:1.05rem;margin:0 0 12px">Main controls</h2>
+    <h2>Main controls</h2>
     <div class="controls">
       <button class="control" id="leftBtn" aria-label="Left button">
         <span class="symbol">◀</span><strong>Left</strong>
@@ -58,14 +65,25 @@ button{font:inherit;border:0;cursor:pointer;touch-action:manipulation;-webkit-ta
   </section>
 
   <section class="panel">
-    <h2 style="font-size:1.05rem;margin:0 0 12px">Quick reactions</h2>
+    <h2>Look pad</h2>
+    <div id="pad"><div id="puck"></div></div>
+    <p class="note">Touch and drag: the pet's eyes follow your finger. Let go and they return to normal.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Reactions</h2>
+    <div class="extra" id="reactions"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Quick actions</h2>
     <div class="extra">
-      <button data-cmd="HAPPY">😊 Happy</button>
       <button data-cmd="BLINK">😉 Blink</button>
       <button data-cmd="SLEEP">😴 Sleep</button>
-      <button data-cmd="BOTH">😵 Confused</button>
+      <button data-cmd="BOTH">😵 Both pressed</button>
       <button data-cmd="CLOCK">🕒 Clock</button>
       <button data-cmd="CALENDAR">📅 Calendar</button>
+      <button data-cmd="HAPPY">😊 Happy</button>
     </div>
     <p class="note">Normal mode shows the pet only. Clock and calendar appear only when requested.</p>
   </section>
@@ -76,10 +94,12 @@ button{font:inherit;border:0;cursor:pointer;touch-action:manipulation;-webkit-ta
   const SERVICE_UUID = "12345678-1234-1234-1234-1234567890ab";
   const CHARACTERISTIC_UUID = "abcdefab-1234-1234-1234-abcdefabcdef";
   const HOLD_MS = 650;
+  const REACTIONS = ["😊 Happy","🤩 Excited","😮 Surprised","🤨 Curious","😜 Playful","😍 Love",
+    "😳 Shy","😎 Proud","🤔 Thinking","😂 Laughing","🤭 Tickled","😱 Scared",
+    "🥱 Bored","😢 Sad","😠 Angry","😵 Confused","😴 Sleepy"];
 
-  let device = null;
-  let characteristic = null;
-  let busy = false;
+  let device = null, characteristic = null, busy = false;
+  let chain = Promise.resolve();      // GATT writes must never overlap
 
   const statusEl = document.getElementById("status");
   const dotEl = document.getElementById("dot");
@@ -128,62 +148,88 @@ button{font:inherit;border:0;cursor:pointer;touch-action:manipulation;-webkit-ta
     }
   }
 
-  async function sendCommand(command) {
-    if (!characteristic) {
-      setStatus("Connect to DesktopPet first");
-      return;
-    }
-    try {
-      const bytes = new TextEncoder().encode(command);
-      if (characteristic.writeValueWithResponse) {
-        await characteristic.writeValueWithResponse(bytes);
-      } else {
-        await characteristic.writeValue(bytes);
+  function write(text, quiet) {
+    if (!characteristic) { if (!quiet) setStatus("Connect to DesktopPet first"); return Promise.resolve(); }
+    chain = chain.then(async () => {
+      try {
+        const bytes = new TextEncoder().encode(text);
+        if (characteristic.writeValueWithResponse) await characteristic.writeValueWithResponse(bytes);
+        else await characteristic.writeValue(bytes);
+        if (!quiet) setStatus("Connected · sent " + text, true);
+      } catch (err) {
+        console.error(err);
+        if (!quiet) setStatus("Command failed. Reconnect Bluetooth.");
       }
-      setStatus("Connected · sent " + command, true);
-    } catch (err) {
-      console.error(err);
-      setStatus("Command failed. Reconnect Bluetooth.");
-    }
+    });
+    return chain;
   }
+  const sendCommand = (c) => write(c, false);
 
   function bindTapHold(button, shortCommand, longCommand) {
-    let timer = null;
-    let longFired = false;
-    let pointerDown = false;
-
-    const clear = () => {
-      if (timer !== null) clearTimeout(timer);
-      timer = null;
-      pointerDown = false;
-    };
-
+    let timer = null, longFired = false, pointerDown = false;
+    const clear = () => { if (timer !== null) clearTimeout(timer); timer = null; pointerDown = false; };
     button.addEventListener("pointerdown", (event) => {
       if (event.pointerType === "mouse" && event.button !== 0) return;
       event.preventDefault();
-      pointerDown = true;
-      longFired = false;
-      timer = setTimeout(() => {
-        if (!pointerDown) return;
-        longFired = true;
-        sendCommand(longCommand);
-      }, HOLD_MS);
+      pointerDown = true; longFired = false;
+      timer = setTimeout(() => { if (!pointerDown) return; longFired = true; sendCommand(longCommand); }, HOLD_MS);
     });
-
     button.addEventListener("pointerup", (event) => {
       event.preventDefault();
       if (!pointerDown) return;
       clear();
       if (!longFired) sendCommand(shortCommand);
     });
-
     button.addEventListener("pointercancel", clear);
     button.addEventListener("contextmenu", (event) => event.preventDefault());
     button.addEventListener("pointerleave", (event) => {
-      // If the user slides off the button, cancel instead of accidentally firing.
       if (pointerDown && event.pointerType !== "touch") clear();
     });
   }
+
+  // ---- look pad: sends "LOOK x y" (-1..1) at most ~10 times a second
+  const pad = document.getElementById("pad");
+  const puck = document.getElementById("puck");
+  let lookTimer = null, pending = null, dragging = false;
+
+  function flushLook() {
+    lookTimer = null;
+    if (pending) { write("LOOK " + pending, true); pending = null; }
+  }
+  function queueLook(x, y) {
+    pending = x.toFixed(2) + " " + y.toFixed(2);
+    if (!lookTimer) lookTimer = setTimeout(flushLook, 100);
+  }
+  function padMove(event) {
+    const r = pad.getBoundingClientRect();
+    const x = Math.max(-1, Math.min(1, ((event.clientX - r.left) / r.width) * 2 - 1));
+    const y = Math.max(-1, Math.min(1, ((event.clientY - r.top) / r.height) * 2 - 1));
+    puck.style.left = ((x + 1) / 2 * 100) + "%";
+    puck.style.top = ((y + 1) / 2 * 100) + "%";
+    queueLook(x, y);
+  }
+  pad.addEventListener("pointerdown", (e) => {
+    e.preventDefault(); dragging = true; pad.classList.add("active");
+    pad.setPointerCapture(e.pointerId); padMove(e);
+  });
+  pad.addEventListener("pointermove", (e) => { if (dragging) { e.preventDefault(); padMove(e); } });
+  const padEnd = () => {
+    if (!dragging) return;
+    dragging = false; pad.classList.remove("active");
+    puck.style.left = "50%"; puck.style.top = "50%";
+    queueLook(0, 0);
+  };
+  pad.addEventListener("pointerup", padEnd);
+  pad.addEventListener("pointercancel", padEnd);
+
+  // ---- reaction buttons: "REACT n"
+  const grid = document.getElementById("reactions");
+  REACTIONS.forEach((label, i) => {
+    const b = document.createElement("button");
+    b.textContent = label;
+    b.addEventListener("click", () => sendCommand("REACT " + i));
+    grid.appendChild(b);
+  });
 
   connectBtn.addEventListener("click", connect);
   bindTapHold(document.getElementById("leftBtn"), "LEFT", "CALENDAR");
