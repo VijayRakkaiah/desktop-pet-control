@@ -18,7 +18,7 @@ h2{font-size:1.05rem;margin:0 0 12px}
 .dot{width:9px;height:9px;border-radius:50%;background:#ff5d72;display:inline-block}
 .dot.on{background:#51efad;box-shadow:0 0 10px #51efad}
 button{font:inherit;border:0;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.connect{display:block;width:min(100%,280px);margin:15px auto 4px;padding:14px;border-radius:14px;background:linear-gradient(120deg,#25d7ee,#42aaff);color:#03101b;font-weight:800;font-size:1rem}
+.connect:disabled{opacity:.65;cursor:wait}.connect{display:block;width:min(100%,280px);margin:15px auto 4px;padding:14px;border-radius:14px;background:linear-gradient(120deg,#25d7ee,#42aaff);color:#03101b;font-weight:800;font-size:1rem}
 .hint{text-align:center;color:var(--muted);font-size:.82rem;line-height:1.45;margin:12px 0 0}
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .control{min-height:124px;border-radius:18px;background:linear-gradient(150deg,#ffe17c,#ffbd48);color:#251900;padding:14px 10px;box-shadow:inset 0 -4px 0 #d99a2f}
@@ -46,7 +46,7 @@ button{font:inherit;border:0;cursor:pointer;touch-action:manipulation;-webkit-ta
   <section class="panel">
     <div class="status"><span id="dot" class="dot"></span><span id="status">Not connected</span></div>
     <button class="connect" id="connectBtn">Connect Bluetooth</button>
-    <p class="hint">Use Chrome on Android or a Web Bluetooth-compatible browser. The ESP32 must be powered on.</p>
+    <p class="hint">Open this page from HTTPS in Chrome on Android. Turn on the ESP32; the picker filters for DesktopPet only. Do not pair from Android Bluetooth Settings.</p>
   </section>
 
   <section class="panel">
@@ -99,7 +99,8 @@ button{font:inherit;border:0;cursor:pointer;touch-action:manipulation;-webkit-ta
     "🥱 Bored","😢 Sad","😠 Angry","😵 Confused","😴 Sleepy"];
 
   let device = null, characteristic = null, busy = false;
-  let chain = Promise.resolve();      // GATT writes must never overlap
+  let chain = Promise.resolve();
+  let connectedServer = null;
 
   const statusEl = document.getElementById("status");
   const dotEl = document.getElementById("dot");
@@ -111,55 +112,108 @@ button{font:inherit;border:0;cursor:pointer;touch-action:manipulation;-webkit-ta
     connectBtn.textContent = connected ? "Disconnect" : "Connect Bluetooth";
   }
 
+  function resetConnection(message = "Disconnected") {
+    characteristic = null;
+    connectedServer = null;
+    setStatus(message, false);
+  }
+
   async function connect() {
-    if (device && device.gatt && device.gatt.connected) {
+    if (busy) return;
+    if (device?.gatt?.connected) {
       device.gatt.disconnect();
-      characteristic = null;
-      setStatus("Disconnected");
+      resetConnection();
+      return;
+    }
+    if (!window.isSecureContext) {
+      setStatus("Open this page from an HTTPS website (for example GitHub Pages).", false);
       return;
     }
     if (!navigator.bluetooth) {
-      setStatus("Web Bluetooth unavailable. Open this page in Chrome on Android.");
+      setStatus("Web Bluetooth unavailable. Use Chrome on Android with Bluetooth enabled.", false);
       return;
     }
-    if (busy) return;
+
     busy = true;
     connectBtn.disabled = true;
     try {
-      setStatus("Choose DesktopPet in the device picker…");
+      setStatus("Searching for DesktopPet…", false);
+      // Filter by the custom service UUID. This avoids showing nearby earbuds,
+      // watches and unrelated BLE devices in the picker.
       device = await navigator.bluetooth.requestDevice({
-        filters: [{ name: "DesktopPet" }],
+        filters: [{ services: [SERVICE_UUID] }],
         optionalServices: [SERVICE_UUID]
       });
-      device.addEventListener("gattserverdisconnected", () => {
-        characteristic = null;
-        setStatus("Disconnected");
-      });
-      const server = await device.gatt.connect();
-      const service = await server.getPrimaryService(SERVICE_UUID);
+
+      device.removeEventListener("gattserverdisconnected", handleDisconnect);
+      device.addEventListener("gattserverdisconnected", handleDisconnect);
+      setStatus("Connecting to " + (device.name || "ESP32") + "…", false);
+      connectedServer = await device.gatt.connect();
+      const service = await connectedServer.getPrimaryService(SERVICE_UUID);
       characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
-      setStatus("Connected to DesktopPet", true);
+
+      const props = characteristic.properties;
+      if (!props.write && !props.writeWithoutResponse) {
+        throw new Error("The ESP32 characteristic does not allow writes. Check the ESP32 BLE firmware.");
+      }
+      setStatus("Connected to " + (device.name || "DesktopPet"), true);
+      // A harmless known command confirms the write path and should show a happy face.
+      await write("HAPPY", true);
+      setStatus("Connected to " + (device.name || "DesktopPet"), true);
     } catch (err) {
-      console.error(err);
-      setStatus(err && err.message ? "Connection failed: " + err.message : "Connection cancelled");
+      console.error("Bluetooth connection error:", err);
+      characteristic = null;
+      const msg = err?.message || String(err);
+      if (err?.name === "NotFoundError") {
+        setStatus("DesktopPet not found. Check that the ESP32 is powered on and BLE is advertising.", false);
+      } else if (err?.name === "SecurityError") {
+        setStatus("Bluetooth blocked. Open this page using HTTPS in Chrome.", false);
+      } else if (err?.name === "NotSupportedError") {
+        setStatus("BLE service/characteristic not supported. Check the ESP32 firmware UUIDs.", false);
+      } else if (err?.name === "NetworkError") {
+        setStatus("BLE connection failed. Reset ESP32 and try again.", false);
+      } else if (err?.name === "AbortError") {
+        setStatus("Bluetooth selection cancelled.", false);
+      } else {
+        setStatus("Bluetooth error: " + msg, false);
+      }
     } finally {
       busy = false;
       connectBtn.disabled = false;
     }
   }
 
-  function write(text, quiet) {
-    if (!characteristic) { if (!quiet) setStatus("Connect to DesktopPet first"); return Promise.resolve(); }
-    chain = chain.then(async () => {
-      try {
-        const bytes = new TextEncoder().encode(text);
-        if (characteristic.writeValueWithResponse) await characteristic.writeValueWithResponse(bytes);
-        else await characteristic.writeValue(bytes);
-        if (!quiet) setStatus("Connected · sent " + text, true);
-      } catch (err) {
-        console.error(err);
-        if (!quiet) setStatus("Command failed. Reconnect Bluetooth.");
+  function handleDisconnect() {
+    characteristic = null;
+    connectedServer = null;
+    setStatus("Disconnected — tap Connect Bluetooth to retry", false);
+  }
+
+  function write(text, quiet = false) {
+    if (!characteristic || !device?.gatt?.connected) {
+      if (!quiet) setStatus("Not connected. Tap Connect Bluetooth first.", false);
+      return Promise.resolve(false);
+    }
+    // Serialize GATT writes; rapid look-pad updates must not overlap.
+    chain = chain.catch(() => {}).then(async () => {
+      if (!characteristic || !device?.gatt?.connected) throw new Error("Bluetooth disconnected");
+      const ch = characteristic;
+      const bytes = new TextEncoder().encode(text);
+      if (ch.writeValueWithResponse && ch.properties.write) {
+        await ch.writeValueWithResponse(bytes);
+      } else if (ch.writeValueWithoutResponse && ch.properties.writeWithoutResponse) {
+        await ch.writeValueWithoutResponse(bytes);
+      } else if (ch.writeValue) {
+        await ch.writeValue(bytes); // fallback for older Android Chrome versions
+      } else {
+        throw new Error("This browser cannot write to the BLE characteristic");
       }
+      if (!quiet) setStatus("Connected · sent " + text, true);
+      return true;
+    }).catch(err => {
+      console.error("BLE write error:", err);
+      if (!quiet) setStatus("Command failed: " + (err?.message || err), false);
+      return false;
     });
     return chain;
   }
