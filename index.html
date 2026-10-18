@@ -90,6 +90,9 @@ input[type=range]{width:100%;accent-color:var(--cyan)}
 .msg.you{justify-self:end;background:#1d3d5c;border-bottom-right-radius:5px}
 .msg.pet{justify-self:start;background:#2a2410;color:#ffe6a3;border:1px solid #574a1c;border-bottom-left-radius:5px}
 .help{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cmds{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#0b1c2e}
+.cmds summary{cursor:pointer;font-weight:700;font-size:.9rem;color:var(--cyan)}
+.cg{font-size:.8rem;color:var(--muted);line-height:1.5;margin-top:8px}.cg b{display:block;color:var(--text);font-size:.82rem}
 .help span{font-size:.75rem;padding:5px 9px;border-radius:99px;background:#0b1c2e;border:1px solid var(--line);color:var(--muted)}
 /* camera */
 .cam{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:4/3;border:1px solid var(--line2)}
@@ -187,13 +190,14 @@ nav button.active{color:var(--cyan)}
 <section class="tab" id="tab-talk">
   <div class="card">
     <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Voice assistant</h2>
-    <p class="sub">Say "Hi", "Good morning", "I love you", "Let's dance", "What's the weather"… The pet animates and answers through your phone speaker.</p>
+    <p class="sub">Control everything by voice, in English or Tamil. Tap the mic, <b>hold the robot's right pad</b>, or turn on hands-free and say <b>"Hey Buddy"</b>.</p>
     <div class="mic-wrap">
       <button class="mic" id="micBtn" aria-label="Start listening"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
       <div class="mic-state" id="micState">Tap the mic to talk</div>
     </div>
     <div class="convo" id="convo"></div>
-    <label class="sw" style="margin-top:8px">Pet speaks out loud<input type="checkbox" class="tg" id="ttsOn" checked></label>
+    <label class="sw" style="margin-top:8px"><span>Hands-free "Hey Buddy"<small>Keeps listening while this page is open (screen stays on)</small></span><input type="checkbox" class="tg" id="handsFree"></label>
+    <label class="sw">Pet speaks out loud<input type="checkbox" class="tg" id="ttsOn" checked></label>
     <label class="sw">Language
       <select id="lang" style="width:auto">
         <option value="en-IN">English (India)</option>
@@ -201,7 +205,20 @@ nav button.active{color:var(--cyan)}
         <option value="ta-IN">தமிழ் (Tamil)</option>
       </select>
     </label>
-    <div class="help" id="helpChips"></div>
+    <details class="cmds"><summary>All voice commands</summary>
+      <div class="cg"><b>Talk</b>Hi · Good morning / night · Bye · How are you · I love you · Thank you · Let's dance · Tell me a joke · Tell me a story · What's your name · My name is …</div>
+      <div class="cg"><b>Feelings</b>Be happy / sad / angry / shy / scared / sleepy / excited · Are you happy? · How do you feel?</div>
+      <div class="cg"><b>Time</b>What time is it · What's today's date · Sync time</div>
+      <div class="cg"><b>Timer</b>Set timer for 25 minutes · Pause / resume / stop timer · Add 5 minutes · How much time is left?</div>
+      <div class="cg"><b>Alarm</b>Set alarm for 6:30 AM · Wake me at 7 · What's my alarm · Alarm off · Snooze · Stop</div>
+      <div class="cg"><b>Weather</b>What's the weather · Will it rain?</div>
+      <div class="cg"><b>Notifications</b>Read my notifications · Clear notifications</div>
+      <div class="cg"><b>Screens</b>Show clock / calendar / mood / menu / settings / Wi-Fi · Next · Previous · Select · Go back</div>
+      <div class="cg"><b>Games</b>Play rock paper scissors → rock / paper / scissors · Left or right → left / right · Reflex test · Stop game</div>
+      <div class="cg"><b>Settings</b>Change eye colour to pink · Use 24 hour clock · Sleep after 5 minutes · Be calm / playful · Quiet hours off · Reset mood</div>
+      <div class="cg"><b>Voice</b>Speak in Tamil / English · Louder · Softer · Stop · Go to sleep · Wake up</div>
+      <div class="cg"><b>தமிழ்</b>வணக்கம் · நேரம் என்ன · இன்று என்ன தேதி · பத்து நிமிடம் டைமர் · காலை ஆறரை மணிக்கு அலாரம் · வானிலை எப்படி · கண் நிறம் பச்சை · ஜோக் சொல்லு · தூங்கு · நன்றி</div>
+    </details>
   </div>
 
   <div class="card">
@@ -454,9 +471,11 @@ const send = (c) => write(c, false);
 // mood notifications "M e h b l"
 function onNotify(e) {
   const txt = new TextDecoder().decode(e.target.value);
+  if (onRobotEvent(txt)) return;
   const m = txt.match(/^M (\d+) (\d+) (\d+) (\d+)/);
   if (!m) return;
   const [E, H, B, L] = m.slice(1).map(Number);
+  Object.assign(moodNow, { E, H, B, L, ok: true });
   [["E", E], ["H", H], ["B", B], ["L", L]].forEach(([k, v]) => { $("m" + k).style.width = v + "%"; $("v" + k).textContent = v; });
   let label = "Calm";
   if (E < 20) label = "Sleepy 😴"; else if (B > 75) label = "Bored 🥱"; else if (H > 75 && L > 70) label = "Loving 🥰";
@@ -530,6 +549,7 @@ SCENES.forEach(([e, n, key, say]) => {
   $("scenes").appendChild(b);
 });
 function scene(key, bubble, speech, reactIdx) {
+  if (bubble && !/^[\x20-\x7E]+$/.test(bubble)) bubble = "...";   // robot screen shows English letters only
   let c = "ANIM " + key;
   if (bubble || reactIdx !== undefined) c += "|" + (bubble || "");
   if (reactIdx !== undefined) c += "|" + reactIdx;
@@ -543,86 +563,422 @@ $("sayBtn").addEventListener("click", () => {
   $("sayText").value = "";
 });
 
-// text to speech (the pet's voice)
+// ---------------------------------------------------------------- voice engine (v6): English + Tamil
+const isTa = () => $("lang").value === "ta-IN";
+const T = (en, ta) => (isTa() && ta) ? ta : en;
+const moodNow = { E: 0, H: 0, B: 0, L: 0, ok: false };
+let voiceVol = +store.get("vol", "1");
+let gameCtx = null, gameCtxAt = 0;
+const sleepMs = (ms) => new Promise(r => setTimeout(r, ms));
+
+// text to speech (the pet's voice) + lip sync on the robot
 let speaking = false;
 function speak(text) {
   addMsg("pet", text);
   if (!$("ttsOn").checked || !window.speechSynthesis) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = $("lang").value; u.pitch = 1.6; u.rate = 1.05;
+  u.lang = isTa() ? "ta-IN" : $("lang").value; u.pitch = 1.5; u.rate = 1.03; u.volume = voiceVol;
   const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.replace("_", "-").startsWith(u.lang.slice(0, 2)));
   if (v) u.voice = v;
-  u.onstart = () => { speaking = true; if (rec && listening) try { rec.abort(); } catch {} };
-  u.onend = u.onerror = () => { speaking = false; if (listening) startRec(); };
+  u.onstart = () => {
+    speaking = true;
+    if (rec) try { rec.abort(); } catch {}
+    write("TALK " + Math.min(20000, 600 + text.length * 90), true);
+  };
+  u.onend = u.onerror = () => {
+    speaking = false;
+    write("TALK 0", true);
+    if (recMode === "free") setTimeout(recStart, 300);
+  };
   speechSynthesis.speak(u);
 }
 function addMsg(who, text) {
   const c = $("convo"), d = document.createElement("div");
   d.className = "msg " + who; d.textContent = text; c.appendChild(d);
-  while (c.children.length > 6) c.removeChild(c.firstChild);
+  while (c.children.length > 8) c.removeChild(c.firstChild);
 }
 
-const JOKES = ["Why did the robot go on holiday? It needed to recharge!", "I'm reading a book about anti-gravity. I can't put it down!",
-  "Why was the computer cold? It left its Windows open!"];
-const EMO = { happy: 0, excited: 1, surprise: 2, curious: 3, playful: 4, shy: 6, proud: 7, think: 8, laugh: 9, scared: 11, bored: 12, sad: 13, angry: 14, confused: 15, sleepy: 16 };
+// ---- numbers and times (English + Tamil)
+const NUM_TA = [["பன்னிரண்டரை", "12:30"], ["பதினொன்றரை", "11:30"], ["பத்தரை", "10:30"], ["ஒன்பதரை", "9:30"], ["எட்டரை", "8:30"],
+  ["ஏழரை", "7:30"], ["ஆறரை", "6:30"], ["ஐந்தரை", "5:30"], ["அஞ்சரை", "5:30"], ["நாலரை", "4:30"], ["மூன்றரை", "3:30"], ["மூணரை", "3:30"],
+  ["இரண்டரை", "2:30"], ["ரெண்டரை", "2:30"], ["ஒன்றரை", "1:30"],
+  ["இருபத்தைந்து", 25], ["நாற்பத்தைந்து", 45], ["முப்பத்தைந்து", 35], ["பதினைந்து", 15], ["பன்னிரண்டு", 12], ["பதினொன்று", 11], ["இருபது", 20],
+  ["முப்பது", 30], ["நாற்பது", 40], ["ஐம்பது", 50], ["அறுபது", 60], ["ஒன்பது", 9], ["ஒன்று", 1], ["இரண்டு", 2], ["ரெண்டு", 2],
+  ["மூன்று", 3], ["மூணு", 3], ["நான்கு", 4], ["நாலு", 4], ["ஐந்து", 5], ["அஞ்சு", 5], ["ஆறு", 6], ["ஏழு", 7], ["எட்டு", 8], ["பத்து", 10]];
+const NUM_EN = [["twenty five", 25], ["forty five", 45], ["thirty five", 35], ["fifteen", 15], ["eleven", 11], ["twelve", 12], ["thirteen", 13],
+  ["fourteen", 14], ["sixteen", 16], ["seventeen", 17], ["eighteen", 18], ["nineteen", 19], ["twenty", 20], ["thirty", 30], ["forty", 40],
+  ["fifty", 50], ["sixty", 60], ["ninety", 90], ["one", 1], ["two", 2], ["three", 3], ["four", 4], ["five", 5], ["six", 6], ["seven", 7],
+  ["eight", 8], ["nine", 9], ["ten", 10], ["an hour", "1 hour"], ["a minute", "1 minute"]];
+function normalize(raw) {
+  let s = " " + raw.toLowerCase().replace(/[!?,]/g, " ") + " ";
+  for (const [w, n] of NUM_TA) s = s.split(w).join(" " + n + " ");
+  for (const [w, n] of NUM_EN) s = s.replace(new RegExp("\\b" + w + "\\b", "g"), " " + n + " ");
+  s = s.replace(/(\d+)\s*(\d{2})\s*(am|pm|a\.m|p\.m)/g, "$1:$2 $3");          // "6 30 am" -> 6:30
+  return s.replace(/\s+/g, " ");
+}
+const firstNum = (s) => { const m = s.match(/(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : null; };
+function parseMinutes(s) {
+  const n = firstNum(s);
+  if (n === null) return null;
+  if (/hour|மணி நேர/.test(s)) return Math.round(n * 60);
+  if (/second|வினாடி/.test(s)) return Math.max(1, Math.round(n / 60));
+  return Math.round(n);
+}
+function parseTime(s) {
+  let h = null, m = 0, mm;
+  if ((mm = s.match(/(\d{1,2})[:.](\d{2})/))) { h = +mm[1]; m = +mm[2]; }
+  else if ((mm = s.match(/half past (\d{1,2})/))) { h = +mm[1]; m = 30; }
+  else if ((mm = s.match(/quarter past (\d{1,2})/))) { h = +mm[1]; m = 15; }
+  else if ((mm = s.match(/quarter to (\d{1,2})/))) { h = (+mm[1] + 23) % 24; m = 45; }
+  else if ((mm = s.match(/(\d{1,2})(?:\s*(?:o'?clock|மணி|மணிக்கு|am|pm|a\.m|p\.m))?(?:\s+(\d{1,2}))?/))) {
+    h = +mm[1]; if (mm[2] && +mm[2] < 60) m = +mm[2];
+  }
+  if (h === null || h > 23) return null;
+  if (/அரை/.test(s) && m === 0) m = 30;
+  const pm = /\bp\.?m\b|evening|night|afternoon|மாலை|இரவு|ராத்திரி|சாயங்காலம்|மதியம்/.test(s);
+  const am = /\ba\.?m\b|morning|காலை|விடியற்காலை/.test(s);
+  if (pm && h < 12) h += 12;
+  else if (am && h === 12) h = 0;
+  else if (!pm && !am && h <= 12) {                       // pick the next time this clock time happens
+    const now = new Date(), cur = now.getHours() * 60 + now.getMinutes();
+    const a = (h % 12) * 60 + m, b = a + 720;
+    h = (a > cur || b <= cur) ? h % 12 : (h % 12) + 12;
+  }
+  return { h, m };
+}
+const fmtClock = (h, m) => {
+  const h12 = h % 12 || 12, mm = String(m).padStart(2, "0");
+  if (isTa()) return (h < 12 ? "காலை" : h < 16 ? "மதியம்" : h < 19 ? "மாலை" : "இரவு") + ` ${h12}:${mm}`;
+  return `${h12}:${mm} ${h < 12 ? "AM" : "PM"}`;
+};
 
-function handleSpeech(raw) {
-  const s = raw.toLowerCase();
+// ---- colours, emotions
+const COLOURS = [[/light blue|sky blue|cyan|வான் ?நீல/, "CYAN", "Cyan"], [/blue|நீல/, "BLUE", "Blue"], [/green|mint|பச்சை/, "MINT", "Mint"],
+  [/pink|rose|இளஞ்சிவப்பு|பிங்க்|ரோஸ்/, "PINK", "Pink"], [/purple|violet|ஊதா/, "PURPLE", "Purple"],
+  [/yellow|orange|amber|gold|மஞ்சள்|ஆரஞ்சு/, "AMBER", "Amber"], [/white|வெள்ளை/, "WHITE", "White"]];
+const EMO = [[/excit|உற்சாக/, 1], [/surpris|ஆச்சரிய/, 2], [/curious|suspicious|சந்தேக/, 3], [/playful|naughty|wink|குறும்பு/, 4],
+  [/\bshy\b|வெட்க/, 6], [/proud|பெருமை/, 7], [/think|யோசி/, 8], [/laugh|சிரி/, 9], [/tickl|கூச்ச/, 10], [/scared|afraid|fear|பயம்|பய/, 11],
+  [/bored|boring|போர்/, 12], [/\bsad\b|cry|சோக|அழு/, 13], [/angry|mad|கோப/, 14], [/confus|dizzy|குழப்ப/, 15], [/sleepy|tired|தூக்கம்/, 16],
+  [/\bhappy\b|smile|சந்தோஷ|மகிழ்ச்சி|சிரிப்பு முகம்/, 0], [/love|அன்பு/, 5]];
+const JOKES = [["Why did the robot go on holiday? It needed to recharge!", "ரோபோ ஏன் விடுமுறைக்குப் போனது? சார்ஜ் ஏற்றத்தான்!"],
+  ["Why was the computer cold? It left its Windows open!", "கம்ப்யூட்டருக்கு ஏன் குளிர்? அது விண்டோஸைத் திறந்து வைத்தது!"],
+  ["What do you call a sleeping robot? A bot-nap!", "தூங்கும் ரோபோவை என்ன சொல்வது? பாட் தூக்கம்!"]];
+const STORIES = [["Once a tiny robot wanted to see the stars. Every night it climbed the desk lamp, until one night the owner switched off the light, and the robot saw a sky full of stars. The end!",
+  "ஒரு குட்டி ரோபோ நட்சத்திரங்களைப் பார்க்க ஆசைப்பட்டது. ஒரு நாள் விளக்கை அணைத்ததும், வானம் முழுக்க நட்சத்திரங்களைக் கண்டது. கதை முடிந்தது!"]];
+
+// ---- intent parser: text -> action  (pure function, easy to extend)
+function parseIntent(raw) {
+  const s = normalize(raw);
   const has = (re) => re.test(s);
+  const A = (o) => Object.assign({ cmds: [] }, o);
   const name = ownerName();
-  if (has(/good ?morning|காலை வணக்கம்/)) return scene("MORNING", null, `Good morning ${name}! Have a wonderful day.`);
-  if (has(/good ?night|இரவு வணக்கம்/)) return scene("NIGHT", null, "Good night! Sweet dreams.");
-  if (has(/\b(bye|goodbye|see you|tata)\b|போய் வரேன்/)) return scene("BYE", null, "Bye bye! Come back soon.");
-  if (has(/love you|i love|லவ் யூ/)) return scene("LOVE", null, "Aww, I love you too!");
-  if (has(/how are you|how do you feel|எப்படி இருக்க/)) return scene("HOWRU", null, "I'm great! Thanks for asking.");
-  if (has(/thank|nandri|நன்றி/)) return scene("THANKS", null, "You're welcome!");
-  if (has(/dance|party|music|song|ஆடு/)) return scene("DANCE", null, "Let's dance!");
-  if (has(/your name|who are you|உன் பெயர்/)) return scene("SAY", "I'm DesktopPet!", "I'm DesktopPet, your little desk buddy!");
-  if (has(/joke|funny|சிரிப்பு/)) { const j = JOKES[Math.floor(Math.random() * JOKES.length)]; return scene("SAY", "Haha!", j, 9); }
-  if (has(/weather|rain|temperature|climate|வானிலை|மழை/)) { sendWeather(false, true); return; }
-  if (has(/what.*time|time now|நேரம்/)) { send("CLOCK"); const d = new Date(); speak("It's " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })); return; }
-  if (has(/date|today|calendar|தேதி/)) { send("CALENDAR"); speak("Today is " + new Date().toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" })); return; }
-  if (has(/notification|messages|alerts/)) { send("NOTILIST"); speak("Here are your notifications."); return; }
-  if (has(/\bmood\b|feeling/)) { send("MOOD"); speak("Here is how I feel."); return; }
-  if (has(/go to sleep|sleep now|\bsleep\b|தூங்கு/)) return scene("NIGHT", "Sleepy...", "Okay, going to sleep.");
-  if (has(/wake up|எழுந்திரு/)) return scene("MORNING", "I'm awake!", "I'm awake!");
-  if (has(/\b(wow|amazing|awesome|super)\b/)) return scene("WOW", null, "Wow!");
-  if (has(/\b(yes|yeah|correct|ஆமா)\b/)) return scene("YES", null, "Yes!");
-  if (has(/\b(no|nope|illa)\b|இல்லை/)) return scene("NO", null, "Nope!");
-  if (has(/\b(hi|hello|hey|hai|vanakkam)\b|வணக்கம்|ஹாய்/)) return scene("HI", null, `Hi ${name}! Nice to see you.`);
-  for (const k in EMO) if (s.includes(k)) { send("REACT " + EMO[k]); speak("Okay!"); return; }
-  scene("SAY", "Hmm?", "Sorry, I didn't get that.", 15);
+
+  // alarm ringing / snooze
+  if (has(/snooze|இன்னும் கொஞ்ச/) || (has(/5 more minutes/) && !has(/timer|add|டைமர்/))) return A({ cmds: ["SNOOZE"], say: ["Okay, 5 more minutes.", "சரி, இன்னும் 5 நிமிடம்."] });
+
+  // timer
+  if (has(/timer|டைமர்|countdown|pomodoro|focus|remind me in|time left|how much time is left|எவ்வளவு நேரம்/)) {
+    if (has(/pause|hold on|நிறுத்தி வை|பாஸ்/)) return A({ cmds: ["TIMER PAUSE"], say: ["Timer paused.", "டைமர் நிறுத்தி வைக்கப்பட்டது."] });
+    if (has(/resume|continue|தொடர்/)) return A({ cmds: ["TIMER RESUME"], say: ["Timer resumed.", "டைமர் மீண்டும் தொடங்கியது."] });
+    if (has(/stop|cancel|end|reset|நிறுத்து|ரத்து/)) return A({ cmds: ["TIMER STOP"], say: ["Timer stopped.", "டைமர் நிறுத்தப்பட்டது."] });
+    if (has(/how much|left|remaining|எவ்வளவு|மீதி/)) return A({ query: "timer" });
+    const n = parseMinutes(s);
+    if (has(/add|more|plus|extra|கூட/) && n) return A({ cmds: ["TIMER ADD " + n], say: [`Added ${n} minutes.`, `${n} நிமிடம் சேர்க்கப்பட்டது.`] });
+    if (n) return A({ cmds: ["TIMER " + Math.min(180, n)], say: [`Timer set for ${n} minutes. Let's focus!`, `${n} நிமிட டைமர் தொடங்கியது.`] });
+    if (has(/start|begin|தொடங்கு/)) return A({ cmds: ["TIMER START"], say: ["Timer started.", "டைமர் தொடங்கியது."] });
+    return A({ cmds: ["SHOW TIMER"], say: ["How many minutes?", "எத்தனை நிமிடம்?"] });
+  }
+
+  // alarm
+  if (has(/alarm|அலாரம்|wake me/)) {
+    if (has(/\boff\b|cancel|delete|remove|disable|stop|வேண்டாம்|ஆஃப்|நீக்கு|ரத்து/)) return A({ cmds: ["ALARM OFF"], say: ["Alarm turned off.", "அலாரம் அணைக்கப்பட்டது."] });
+    const t = parseTime(s);
+    if (t) return A({ cmds: [`ALARM ${t.h} ${t.m}`], say: [`Alarm set for ${fmtClock(t.h, t.m)}.`, `${fmtClock(t.h, t.m)} க்கு அலாரம் வைக்கப்பட்டது.`] });
+    if (has(/what|when|which|என்ன|எப்போ|எத்தனை/)) return A({ query: "alarm" });
+    if (has(/\bon\b|enable/)) return A({ cmds: ["ALARM ON"], say: ["Alarm turned on.", "அலாரம் இயக்கப்பட்டது."] });
+    return A({ say: ["For what time? Say, set alarm for 6:30 AM.", "எந்த நேரத்துக்கு? உதாரணம்: காலை ஆறரை மணிக்கு அலாரம்."] });
+  }
+
+
+  // name
+  let mm;
+  if ((mm = raw.match(/my name is ([\p{L}\p{M} .'-]{2,18})/iu)) || (mm = raw.match(/என் பெயர் ([\p{L}\p{M} .'-]{2,18})/u)) && !/என்ன/.test(raw)) {
+    const n = mm[1].trim().replace(/\s+(ok|okay)$/i, "");
+    const ascii = /^[\x20-\x7E]+$/.test(n);             // the robot's screen font is English-only
+    return A({ setName: n, cmds: ascii ? ["NAME " + n] : [], scene: ["HI", ascii ? `Hi ${n}!` : "Hi!"], say: [`Nice to meet you, ${n}!`, `உங்களைச் சந்தித்ததில் மகிழ்ச்சி, ${n}!`] });
+  }
+  if (has(/what('s| is) my name|என் பெயர் என்ன/)) return A({ say: [`Your name is ${name}.`, `உங்கள் பெயர் ${name}.`] });
+
+  // language & voice
+  if (has(/(speak|talk|reply).*tamil|தமிழில் பேசு|தமிழ்ல பேசு/)) return A({ lang: "ta-IN", say: ["", "சரி, இனி தமிழில் பேசுகிறேன்."] });
+  if (has(/(speak|talk|reply).*english|ஆங்கிலத்தில் பேசு|இங்கிலீஷ்/)) return A({ lang: "en-IN", say: ["Okay, I'll speak English now."] });
+  if (has(/louder|speak up|volume up|சத்தமா/)) return A({ vol: +0.25, say: ["Is this better?", "இப்போ சரியா?"] });
+  if (has(/softer|quieter|slowly|volume down|மெதுவா|சத்தம் குறை/)) return A({ vol: -0.25, say: ["Okay, softer.", "சரி, மெதுவாக."] });
+
+  // settings
+  const col = COLOURS.find(([re]) => re.test(s));
+  if (col && has(/eye|eyes|colou?r|கண்|நிறம்|கலர்/))
+    return A({ cmds: ["SET THEME " + col[1]], say: [`My eyes are ${col[2].toLowerCase()} now!`, `என் கண்கள் இப்போ ${col[2]}!`] });
+  if (has(/24 hour|twenty four hour|24 மணி/)) return A({ cmds: ["SET CLOCK 24"], say: ["Using 24 hour clock.", "24 மணி நேர கடிகாரம்."] });
+  if (has(/12 hour|12 மணி நேர/)) return A({ cmds: ["SET CLOCK 12"], say: ["Using 12 hour clock.", "12 மணி நேர கடிகாரம்."] });
+  if (has(/sleep after|sleep timer|go to sleep after/)) {
+    if (has(/never|don't/)) return A({ cmds: ["SET SLEEP NEVER"], say: ["I'll stay awake.", "நான் விழித்தே இருப்பேன்."] });
+    const n = firstNum(s); if (n) return A({ cmds: ["SET SLEEP " + n], say: [`I'll sleep after ${n} minutes of quiet.`, `${n} நிமிடம் கழித்து தூங்குவேன்.`] });
+  }
+  if (has(/calm mode|be calm|calm down|அமைதியான/)) return A({ cmds: ["SET PERS CALM"], say: ["Calm mode on.", "அமைதி மோட்."] });
+  if (has(/playful mode|be playful|naughty mode|குறும்பு மோட்/)) return A({ cmds: ["SET PERS PLAYFUL"], say: ["Yay, playful mode!", "குறும்பு மோட்!"] });
+  if (has(/normal mode/)) return A({ cmds: ["SET PERS NORMAL"], say: ["Normal mode.", "சாதாரண மோட்."] });
+  if (has(/quiet hours|night mode|do not disturb/)) {
+    const on = !has(/\boff\b|disable|stop/);
+    return A({ cmds: ["SET QUIET " + (on ? "ON" : "OFF")], say: [on ? "Quiet hours on." : "Quiet hours off.", on ? "இரவு அமைதி நேரம் ஆன்." : "இரவு அமைதி நேரம் ஆஃப்."] });
+  }
+  if (has(/hints? (on|off)|gesture hints/)) { const on = !has(/off/); return A({ cmds: ["SET HINTS " + (on ? "ON" : "OFF")], say: [on ? "Hints on." : "Hints off."] }); }
+  if (has(/voice key|push to talk/)) { const on = !has(/off|disable/); return A({ cmds: ["SET VOICEKEY " + (on ? "ON" : "OFF")], say: [on ? "Hold my right pad to talk to me." : "Right pad hold shows the clock again."] }); }
+  if (has(/reset (your )?mood/)) return A({ cmds: ["MOODRESET"], say: ["Mood reset. I feel fresh!", "மனநிலை புதுப்பிக்கப்பட்டது!"] });
+  if (has(/sync (the )?time|update (the )?time|correct the time|நேரத்தை சரி/)) return A({ syncTime: true, say: ["Time synced.", "நேரம் சரி செய்யப்பட்டது."] });
+
+  // games
+  const inRps = gameCtx === "rps" && Date.now() - gameCtxAt < 120000;
+  const inGuess = gameCtx === "guess" && Date.now() - gameCtxAt < 120000;
+  if (has(/(stop|exit|quit|end) (the )?game|விளையாட்டு போதும்/)) return A({ cmds: ["GAME EXIT"], ctx: null, say: ["Good game!", "நல்ல விளையாட்டு!"] });
+  if (has(/rock paper|paper scissors|கல் காகிதம்/)) return A({ cmds: ["GAME RPS"], ctx: "rps", say: ["Let's play! Say rock, paper or scissors.", "விளையாடலாம்! கல், காகிதம் அல்லது கத்தரிக்கோல் சொல்லுங்கள்."] });
+  if (has(/reflex|reaction (game|test)|speed test/)) return A({ cmds: ["GAME REFLEX"], ctx: null, say: ["Tap my right pad to start, then tap again when my eyes turn green!", "வலது பட்டனைத் தொடுங்கள், கண் பச்சையானதும் மீண்டும் தொடுங்கள்!"] });
+  if (has(/left or right|guess(ing)? game|star game|find the star|இடது வலது|நட்சத்திர/)) return A({ cmds: ["GAME GUESS"], ctx: "guess", say: ["Where is the star? Say left or right.", "நட்சத்திரம் எங்கே? இடது அல்லது வலது சொல்லுங்கள்."] });
+  if (has(/\b(rock|stone)\b|^\s*கல்\s*$|கல்லு/) && (inRps || !has(/music|song/))) return A({ cmds: ["RPS ROCK"], ctx: "rps", silent: true });
+  if (has(/\bpaper\b|காகிதம்|பேப்பர்/) && inRps) return A({ cmds: ["RPS PAPER"], ctx: "rps", silent: true });
+  if (has(/scissor|கத்தரி/)) return A({ cmds: ["RPS SCISSORS"], ctx: "rps", silent: true });
+  if (inGuess && has(/\bleft\b|இடது|லெப்ட்/)) return A({ cmds: ["GUESS LEFT"], ctx: "guess", silent: true });
+  if (inGuess && has(/\bright\b|வலது|ரைட்/)) return A({ cmds: ["GUESS RIGHT"], ctx: "guess", silent: true });
+  if (has(/play (a )?game|let's play|games|விளையாட/)) return A({ cmds: ["SHOW GAMES"], say: ["Which game? Rock paper scissors, reflex test, or left or right?", "எந்த விளையாட்டு? கல் காகிதம் கத்தரிக்கோல், ரிஃப்ளெக்ஸ், அல்லது இடது வலது?"] });
+
+  // stop / quiet (after timer, alarm, settings and games, which have their own "stop")
+  if (has(/^\s*(stop|quiet|be quiet|shut up|cancel|enough|silence)\b|நிறுத்து|பேசாதே|அமைதியா/))
+    return A({ cmds: ["STOP"], stopSpeech: true });
+
+  // notifications
+  if (has(/clear .*(notification|message)|delete .*(notification|message)|அறிவிப்ப.*(அழி|நீக்கு)/)) return A({ cmds: ["NOTICLR"], say: ["All notifications cleared.", "அனைத்து அறிவிப்புகளும் நீக்கப்பட்டன."] });
+  if (has(/read .*(notification|message)|any (new )?(notification|message)|my (notification|message)|what('s| is) new|அறிவிப்பு|மெசேஜ்|நோட்டிஃபிகேஷன்/)) return A({ query: "notif" });
+
+  // weather
+  if (has(/weather|rain|temperature|climate|how hot|how cold|umbrella|வானிலை|மழை|வெயில்|வெப்ப|குடை/)) return A({ query: "weather" });
+
+  // time & date
+  if (has(/what('s| is)? (the )?time|time now|current time|time is it|show .*time|நேரம் என்ன|மணி என்ன|என்ன நேரம்|டைம் என்ன/)) return A({ cmds: ["SHOW CLOCK"], query: "time" });
+  if (has(/what('s| is)? (the |today'?s )?date|what day|which day|today|calendar|தேதி|கிழமை|இன்னைக்கு|இன்று|காலண்டர்|நாட்காட்டி/)) return A({ cmds: ["SHOW CALENDAR"], query: "date" });
+
+
+  // mood
+  if (has(/how do you feel|your mood|are you (happy|ok|okay|fine)|மனநிலை|சந்தோஷமா|எப்படி உணர/)) return A({ cmds: ["SHOW MOOD"], query: "mood" });
+
+  // screens & navigation
+  if (has(/wi-?fi|வைஃபை|internet/)) return A({ cmds: ["SHOW WIFI"], say: ["Here is my Wi-Fi status.", "இது என் வைஃபை நிலை."] });
+  if (has(/settings|செட்டிங்|அமைப்புகள்/)) return A({ cmds: ["SHOW SETTINGS"], say: ["Opening settings.", "அமைப்புகள்."] });
+  if (has(/\bmenu\b|மெனு/)) return A({ cmds: ["SHOW MENU"], say: ["Here is my menu. Say next, previous or select.", "மெனு. அடுத்து, முந்தைய, அல்லது சரி என்று சொல்லுங்கள்."] });
+  if (has(/\bclock\b|கடிகாரம்/)) return A({ cmds: ["SHOW CLOCK"], silent: true });
+  if (has(/about you|version|அபௌட்/)) return A({ cmds: ["SHOW ABOUT"], silent: true });
+  if (has(/(show|list) .*reactions|expressions list/)) return A({ cmds: ["SHOW REACT"], silent: true });
+  if (has(/(show|list) .*animations/)) return A({ cmds: ["SHOW ANIM"], silent: true });
+  if (has(/^\s*(next|down|go down)\s*$|கீழே|அடுத்தது|அடுத்து/)) return A({ cmds: ["TOUCH L TAP"], silent: true });
+  if (has(/^\s*(previous|up|go up|back up)\s*$|மேலே|முந்தைய/)) return A({ cmds: ["TOUCH L DOUBLE"], silent: true });
+  if (has(/^\s*(select|ok|okay|choose|open( it)?|enter|this one)\s*$|^\s*சரி\s*$|தேர்வு/)) return A({ cmds: ["TOUCH R TAP"], silent: true });
+  if (has(/go back|^\s*back\s*$|go home|home screen|show (your )?face|close|பின்னால்|திரும்பு|முகம் காட்டு/)) return A({ cmds: ["BACK"], silent: true });
+
+  // sleep / wake
+  if (has(/good ?night|குட் ?நைட்|இனிய இரவு/)) return A({ scene: ["NIGHT"], say: [`Good night ${name}! Sweet dreams.`, `இனிய இரவு ${name}! நல்ல கனவுகள்.`] });
+  if (has(/go to sleep|sleep now|take a nap|^\s*sleep\s*$|தூங்கு/)) return A({ scene: ["NIGHT", "Sleepy..."], say: ["Okay, going to sleep.", "சரி, தூங்கப் போகிறேன்."] });
+  if (has(/wake up|get up|எழுந்திரு|எழுந்துரு/)) return A({ cmds: ["WAKE"], say: ["I'm awake!", "நான் விழித்துவிட்டேன்!"] });
+
+  // conversation scenes
+  if (has(/good ?morning|காலை வணக்கம்|குட் ?மார்னிங்/)) return A({ scene: ["MORNING"], say: [`Good morning ${name}! Have a wonderful day.`, `காலை வணக்கம் ${name}! இனிய நாளாக அமையட்டும்.`] });
+  if (has(/\b(bye|goodbye|see you|tata)\b|போய் வரேன்|பை பை|டாட்டா/)) return A({ scene: ["BYE"], say: ["Bye bye! Come back soon.", "பை பை! சீக்கிரம் வாங்க."] });
+  if (has(/love you|i love|லவ் யூ|உன்னை பிடிக்கும்/)) return A({ scene: ["LOVE"], say: ["Aww, I love you too!", "நானும் உங்களை நேசிக்கிறேன்!"] });
+  if (has(/how are you|how r u|எப்படி இருக்க|நலமா/)) return A({ scene: ["HOWRU"], say: ["I'm great! Thanks for asking.", "நான் நன்றாக இருக்கிறேன்! கேட்டதற்கு நன்றி."] });
+  if (has(/thank|nandri|நன்றி|தேங்க்ஸ்/)) return A({ scene: ["THANKS"], say: ["You're welcome!", "பரவாயில்லை!"] });
+  if (has(/dance|party|music|song|sing|ஆடு|டான்ஸ்|நடனம்|பாட்டு|பாடு/)) return A({ scene: ["DANCE"], say: ["Let's dance!", "ஆடலாம் வாங்க!"] });
+  if (has(/your name|who are you|உன் பெயர்|நீ யார்/)) return A({ scene: ["SAY", "I'm DesktopPet!"], say: ["I'm DesktopPet, your little desk buddy!", "நான் டெஸ்க்டாப் பெட், உங்கள் குட்டி நண்பன்!"] });
+  if (has(/joke|funny|ஜோக்|சிரிப்பு/)) { const j = JOKES[Math.floor(Math.random() * JOKES.length)]; return A({ scene: ["SAY", "Haha!", 9], say: j }); }
+  if (has(/story|கதை/)) { const st = STORIES[0]; return A({ scene: ["SAY", "Story time!", 0], say: st }); }
+  if (has(/\b(wow|amazing|awesome|super|great)\b|சூப்பர்|அருமை/)) return A({ scene: ["WOW"], say: ["Wow!", "அருமை!"] });
+  if (has(/^\s*(yes|yeah|yep|correct)\s*$|^\s*(ஆமா|ஆம்)\s*$/)) return A({ scene: ["YES"], say: ["Yes!", "ஆமாம்!"] });
+  if (has(/^\s*(no|nope|nah)\s*$|^\s*இல்லை\s*$/)) return A({ scene: ["NO"], say: ["Nope!", "இல்லை!"] });
+
+  // emotions ("be happy", "look angry")
+  const emo = EMO.find(([re]) => re.test(s));
+  if (emo) return A({ cmds: ["REACT " + emo[1]], say: ["Okay!", "சரி!"] });
+
+  // greetings last (short words like "hi" appear inside other phrases)
+  if (has(/\b(hi|hello|hey|hai|hii|vanakkam)\b|வணக்கம்|ஹாய்|ஹலோ/)) return A({ scene: ["HI"], say: [`Hi ${name}! Nice to see you.`, `வணக்கம் ${name}! உங்களைப் பார்த்ததில் மகிழ்ச்சி.`] });
+
+  return A({ scene: ["SAY", "Hmm?", 15], say: ["Sorry, I didn't get that.", "மன்னிக்கவும், புரியவில்லை."] });
 }
 
-// speech recognition
+// ---- run an action on the robot + answer
+function pickSay(sayArr) { if (!sayArr) return ""; return T(sayArr[0], sayArr[1]) || sayArr[0] || sayArr[1] || ""; }
+async function readInfo() {
+  if (!infoChar) return {};
+  try {
+    const dv = await infoChar.readValue();
+    const kv = {};
+    new TextDecoder().decode(dv).split(";").forEach(p => { const i = p.indexOf(":"); if (i > 0) kv[p.slice(0, i)] = p.slice(i + 1); });
+    return kv;
+  } catch { return {}; }
+}
+async function runQuery(q) {
+  if (q === "time") {
+    const d = new Date();
+    return speak(T("It's " + d.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" }),
+                   "இப்போது நேரம் " + d.toLocaleTimeString("ta-IN", { hour: "numeric", minute: "2-digit" })));
+  }
+  if (q === "date") {
+    const d = new Date();
+    return speak(T("Today is " + d.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" }),
+                   "இன்று " + d.toLocaleDateString("ta-IN", { weekday: "long", day: "numeric", month: "long" })));
+  }
+  if (q === "weather") return sendWeather(false, true);
+  if (q === "mood") {
+    if (!moodNow.ok) return speak(T("I feel good!", "நான் நன்றாக இருக்கிறேன்!"));
+    const { E, H, B } = moodNow;
+    if (E < 20) return speak(T("I'm a bit sleepy.", "எனக்கு கொஞ்சம் தூக்கம் வருது."));
+    if (B > 70) return speak(T("I'm bored. Play with me!", "எனக்கு போர் அடிக்குது. என்னோட விளையாடுங்க!"));
+    if (H > 70) return speak(T("I'm very happy!", "நான் ரொம்ப சந்தோஷமா இருக்கேன்!"));
+    if (H < 30) return speak(T("I'm feeling a little lonely.", "எனக்கு கொஞ்சம் தனிமையா இருக்கு."));
+    return speak(T("I'm feeling calm and good.", "நான் அமைதியா, நன்றாக இருக்கேன்."));
+  }
+  if (q === "timer") {
+    const kv = await readInfo();
+    const s = +kv.TM;
+    if (!(s >= 0)) return speak(T("No timer is running.", "டைமர் எதுவும் ஓடவில்லை."));
+    const m = Math.floor(s / 60), sec = s % 60;
+    return speak(T(`${m} minutes and ${sec} seconds left${kv.TP === "1" ? ", paused" : ""}.`, `இன்னும் ${m} நிமிடம் ${sec} வினாடி உள்ளது.`));
+  }
+  if (q === "alarm") {
+    const kv = await readInfo();
+    if (kv.AO !== "1") return speak(T("No alarm is set.", "அலாரம் எதுவும் இல்லை."));
+    return speak(T(`Your alarm is at ${fmtClock(+kv.AH, +kv.AM)}.`, `உங்கள் அலாரம் ${fmtClock(+kv.AH, +kv.AM)}.`));
+  }
+  if (q === "notif") {
+    await write("NOTIREAD", true);
+    await sleepMs(250);
+    if (!infoChar) return speak(T("Please update the robot firmware first.", "முதலில் ரோபோ ஃபர்ம்வேரை புதுப்பிக்கவும்."));
+    const txt = new TextDecoder().decode(await infoChar.readValue());
+    if (!txt.startsWith("N:")) return speak(T("I couldn't read them.", "படிக்க முடியவில்லை."));
+    const parts = txt.split("\x1E"), n = parseInt(parts[0].slice(2)) || 0;
+    if (!n) return speak(T("You have no notifications.", "உங்களுக்கு அறிவிப்புகள் இல்லை."));
+    const items = parts.slice(1, 4).map(p => { const [app, title, text] = p.split("\x1F"); return `${app}${title ? ", " + title : ""}: ${text || ""}`; });
+    return speak(T(`You have ${n} notification${n > 1 ? "s" : ""}. ` + items.join(". "), `உங்களுக்கு ${n} அறிவிப்புகள். ` + items.join(". ")));
+  }
+}
+async function runIntent(a) {
+  if (a.stopSpeech && window.speechSynthesis) { speechSynthesis.cancel(); write("TALK 0", true); }
+  if (a.lang) { $("lang").value = a.lang; store.set("lang", a.lang); if (rec) rec.lang = a.lang; }
+  if (a.vol) { voiceVol = Math.max(0.25, Math.min(1, voiceVol + a.vol)); store.set("vol", String(voiceVol)); }
+  if (a.setName) { store.set("name", a.setName); $("ownerName").value = a.setName; }
+  if (a.syncTime) await syncTime(true);
+  if ("ctx" in a) { gameCtx = a.ctx; gameCtxAt = Date.now(); }
+  for (const c of a.cmds) await write(c, true);
+  if (a.scene) {
+    const [key, bubble, react] = a.scene;
+    const b = bubble && /^[\x20-\x7E]+$/.test(bubble) ? bubble : "";   // Tamil text can't be drawn on the robot
+    let c = "ANIM " + key;
+    if (b || react !== undefined) c += "|" + b;
+    if (react !== undefined) c += "|" + react;
+    await write(c, true);
+  }
+  if (a.query) return runQuery(a.query);
+  if (!a.silent) { const t = pickSay(a.say); if (t) speak(t); }
+}
+function handleCommand(text) { runIntent(parseIntent(text)); }
+window.petVoice = { parseIntent, normalize, parseTime };     // handy for testing in the browser console
+
+// robot -> phone events (push-to-talk, game results)
+function onRobotEvent(txt) {
+  if (txt === "P") { listen("once"); return true; }
+  let m;
+  if ((m = txt.match(/^G RPS (\d) (\d) (\d)/))) {
+    const EN = ["rock", "paper", "scissors"], TA = ["கல்", "காகிதம்", "கத்தரிக்கோல்"];
+    const pet = +m[2], r = +m[3];
+    const resEn = ["It's a draw!", "You win!", "I win!"][r], resTa = ["சமம்!", "நீங்கள் வென்றீர்கள்!", "நான் வென்றேன்!"][r];
+    speak(T(`I chose ${EN[pet]}. ${resEn} Again? Say rock, paper or scissors.`, `நான் ${TA[pet]}. ${resTa}`));
+    return true;
+  }
+  if ((m = txt.match(/^G GUESS (\d) (\d+)/))) {
+    speak(+m[1] ? T(`You found it! Streak ${m[2]}. Next round, left or right?`, `கண்டுபிடித்தீர்கள்! அடுத்து, இடது அல்லது வலது?`)
+                : T("Nope, it was the other one! Try again, left or right?", "இல்லை, மற்றொன்று! மீண்டும், இடது அல்லது வலது?"));
+    return true;
+  }
+  return false;
+}
+
+// ---- speech recognition: tap-to-talk, robot push-to-talk, hands-free "Hey Buddy"
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec = null, listening = false;
-function startRec() {
-  if (!rec || speaking) return;
-  try { rec.lang = $("lang").value; rec.start(); } catch {}
+let rec = null, recMode = null, awakeUntil = 0, wakeLock = null;
+const WAKE_RE = /\b(hey|hi|hai|ok|okay|a)\s*(buddy|buddie|budi|bady|body|birdie|buddi|baddy)\b|ஹே\s*(பட்டி|பாடி|படி)|ஹாய்\s*பட்டி/i;
+
+function recStart() {
+  if (!SR || !recMode || speaking) return;
+  if (!rec) {
+    rec = new SR();
+    rec.interimResults = false; rec.maxAlternatives = 1;
+    rec.onresult = (e) => {
+      for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) onHeard(e.results[i][0].transcript.trim());
+    };
+    rec.onerror = (e) => {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") { setMode(null); toast("Allow the microphone: tap the mic button once"); }
+    };
+    rec.onend = () => {
+      if (recMode === "free" && !speaking) setTimeout(recStart, 250);
+      else if (recMode === "once") { setMode(null); write("STATE IDLE", true); }
+    };
+  }
+  rec.lang = isTa() ? "ta-IN" : $("lang").value;
+  rec.continuous = recMode === "free";
+  try { rec.start(); } catch {}
 }
-if (SR) {
-  rec = new SR();
-  rec.continuous = false; rec.interimResults = false; rec.maxAlternatives = 1;
-  rec.onresult = (e) => {
-    const t = e.results[e.results.length - 1][0].transcript.trim();
-    if (!t) return;
-    addMsg("you", t); handleSpeech(t);
-  };
-  rec.onstart = () => { $("micState").textContent = "Listening…"; };
-  rec.onerror = (e) => { if (e.error === "not-allowed") { listening = false; updateMic(); toast("Microphone permission denied"); } };
-  rec.onend = () => { if (listening && !speaking) setTimeout(startRec, 250); else if (!listening) $("micState").textContent = "Tap the mic to talk"; };
+function setMode(m) {
+  recMode = m;
+  $("micBtn").classList.toggle("live", !!m);
+  $("micState").textContent = m === "free" ? 'Hands-free: say "Hey Buddy…"' : m === "once" ? "Listening…" : "Tap the mic to talk";
+  $("handsFree").checked = m === "free";
 }
-function updateMic() { $("micBtn").classList.toggle("live", listening); $("micState").textContent = listening ? "Listening…" : "Tap the mic to talk"; }
-$("micBtn").addEventListener("click", () => {
-  if (!rec) { toast("Voice recognition needs Chrome on Android"); return; }
+async function keepScreenOn(on) {
+  try {
+    if (on && "wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen");
+    else if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; }
+  } catch {}
+}
+function listen(mode) {
+  if (!SR) { toast("Voice needs Chrome on Android"); return; }
   if (sound.on) { stopSound(); toast("Clap detection paused while talking"); }
-  listening = !listening; updateMic();
-  if (listening) startRec(); else try { rec.abort(); } catch {}
-});
-["Hi", "Good morning", "I love you", "Let's dance", "How are you", "Tell me a joke", "What's the weather", "What time is it", "Good night", "Vanakkam"]
-  .forEach(t => { const s = document.createElement("span"); s.textContent = "“" + t + "”"; $("helpChips").appendChild(s); });
+  if (rec) try { rec.abort(); } catch {}
+  setMode(mode);
+  if (mode === "once") write("STATE LISTEN", true);
+  keepScreenOn(mode === "free");
+  setTimeout(recStart, 150);
+}
+function stopListen() { setMode(null); keepScreenOn(false); if (rec) try { rec.abort(); } catch {} write("STATE IDLE", true); }
+function onHeard(t) {
+  if (!t) return;
+  if (recMode === "free") {
+    const now = Date.now();
+    const w = t.match(WAKE_RE);
+    if (w) {
+      const rest = t.slice(w.index + w[0].length).replace(/^[\s,.]+/, "");
+      addMsg("you", t);
+      if (rest.length > 1) { write("STATE LISTEN", true); handleCommand(rest); awakeUntil = 0; }
+      else { awakeUntil = now + 8000; write("STATE LISTEN", true); speak(T("Yes?", "சொல்லுங்க?")); }
+      return;
+    }
+    if (now < awakeUntil) { awakeUntil = 0; addMsg("you", t); handleCommand(t); }
+    return;
+  }
+  addMsg("you", t);
+  handleCommand(t);
+}
+$("micBtn").addEventListener("click", () => { if (recMode === "once") stopListen(); else listen("once"); });
+$("handsFree").addEventListener("change", (e) => { if (e.target.checked) listen("free"); else stopListen(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && recMode === "free") { keepScreenOn(true); recStart(); } });
+$("lang").value = store.get("lang", "en-IN");
 
 // ---------------------------------------------------------------- face tracking
 const cam = { on: false, stream: null, detector: null, native: null, raf: 0, lastSend: 0, lastLook: [0, 0], seenAt: 0, lostAt: 0, present: false };
@@ -699,7 +1055,7 @@ $("camBtn").addEventListener("click", () => cam.on ? stopCam() : startCam());
 // ---------------------------------------------------------------- clap / noise / music
 const sound = { on: false, ctx: null, stream: null, an: null, buf: null, floor: 0.01, prev: 0, lastClap: 0, loudSince: 0, lastLoud: 0, lastMusic: 0 };
 async function startSound() {
-  if (listening) { listening = false; updateMic(); try { rec.abort(); } catch {} toast("Voice paused while listening for claps"); }
+  if (recMode) { stopListen(); toast("Voice paused while listening for claps"); }
   try {
     sound.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
   } catch { toast("Microphone permission denied"); return; }
@@ -900,7 +1256,9 @@ async function sendWeather(quiet, speakIt) {
     store.set("loc", `${(+loc.lat).toFixed(4)} ${(+loc.lon).toFixed(4)}|${city}`);
     await write("LOC " + store.get("loc", ""), true);           // robot keeps it updated itself over Wi-Fi
     await write(`WX ${code} ${day} ${t} ${hi} ${lo}|${city}`, quiet);
-    if (speakIt) speak(`It's ${t} degrees and ${WX_NAME[code].toLowerCase()} in ${city}.` + (code === 4 || code === 5 ? " Take an umbrella!" : ""));
+    const WX_TA = ["தெளிவான வானம்", "ஓரளவு மேகமூட்டம்", "மேகமூட்டம்", "பனிமூட்டம்", "மழை", "இடியுடன் மழை", "பனி"];
+    if (speakIt) speak(T(`It's ${t} degrees and ${WX_NAME[code].toLowerCase()} in ${city}.` + (code === 4 || code === 5 ? " Take an umbrella!" : ""),
+                         `${city}-ல் இப்போது ${t} டிகிரி, ${WX_TA[code]}.` + (code === 4 || code === 5 ? " குடை எடுத்துச் செல்லுங்கள்!" : "")));
   } catch (e) { if (!quiet) toast("Weather: " + (e.message || e)); }
 }
 $("wxBtn").addEventListener("click", () => sendWeather(false));
