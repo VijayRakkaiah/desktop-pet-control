@@ -52,8 +52,8 @@ main{max-width:720px;margin:auto;padding:14px 16px calc(var(--nav) + 26px)}
 .chip{padding:12px 6px;border-radius:12px;background:var(--card2);border:1px solid var(--line2);font-weight:650;font-size:.84rem;display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.15;text-align:center}
 .chip .e{font-size:1.35rem}
 .chip:active{transform:scale(.96);background:#1d4060}
-input[type=text],select{width:100%;padding:11px 12px;border-radius:12px;background:#0a1828;border:1px solid var(--line2);outline:none}
-input[type=text]:focus,select:focus{border-color:var(--cyan)}
+input[type=text],input[type=password],select{width:100%;padding:11px 12px;border-radius:12px;background:#0a1828;border:1px solid var(--line2);outline:none}
+input[type=text]:focus,input[type=password]:focus,select:focus{border-color:var(--cyan)}
 label.sw{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:.9rem}
 label.sw:first-of-type{border-top:0}
 label.sw small{display:block;color:var(--muted);font-size:.76rem;margin-top:2px}
@@ -271,6 +271,21 @@ nav button.active{color:var(--cyan)}
 <!-- ================= MORE ================= -->
 <section class="tab" id="tab-more">
   <div class="card">
+    <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0"/><circle cx="12" cy="19.5" r="1"/></svg>Robot Wi-Fi</h2>
+    <p class="sub" id="wifiStatus">Connect Bluetooth to see the robot's Wi-Fi status.</p>
+    <div class="fld">
+      <input type="text" id="wSsid" maxlength="32" placeholder="Wi-Fi name (2.4 GHz network)" autocomplete="off" autocapitalize="off">
+      <div class="row"><input type="password" id="wPass" class="grow" maxlength="64" placeholder="Wi-Fi password" autocomplete="off"><button class="btn" id="wShow" style="width:auto">👁</button></div>
+    </div>
+    <div class="grid">
+      <button class="btn primary" id="wSave">Save</button>
+      <button class="btn" data-cmd="WIFISETUP">Hotspot</button>
+      <button class="btn warn" id="wForget">Forget</button>
+    </div>
+    <p class="tiny">The password is sent over Bluetooth and saved inside the robot. The ESP32 works only with 2.4 GHz Wi-Fi. No phone handy? Tap Hotspot, join "DesktopPet-Setup" and the setup page opens.</p>
+  </div>
+
+  <div class="card">
     <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4.5 13 3 3 0 0 0 6 19z"/></svg>Weather</h2>
     <div class="row"><input type="text" id="city" class="grow" placeholder="City (e.g. Chennai)"><button class="btn" id="gpsBtn" title="Use my location">📍</button><button class="btn primary" id="wxBtn">Send</button></div>
     <div class="wx" id="wxCard" hidden><div class="ic" id="wxIc"></div><div><div class="tp" id="wxTp"></div><div class="d" id="wxD"></div></div></div>
@@ -318,6 +333,7 @@ nav button.active{color:var(--cyan)}
 "use strict";
 const SERVICE_UUID = "12345678-1234-1234-1234-1234567890ab";
 const CHARACTERISTIC_UUID = "abcdefab-1234-1234-1234-abcdefabcdef";
+const INFO_UUID = "abcdefab-1234-1234-1234-abcdefabcd02";
 const HOLD_MS = 650, DOUBLE_MS = 300;
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -338,7 +354,7 @@ document.querySelectorAll("nav button").forEach(b => b.addEventListener("click",
 }));
 
 // ---------------------------------------------------------------- Bluetooth
-let device = null, characteristic = null, busy = false, chain = Promise.resolve(), pending = 0;
+let device = null, characteristic = null, infoChar = null, busy = false, chain = Promise.resolve(), pending = 0;
 const connectBtn = $("connectBtn");
 
 function setStatus(message, connected) {
@@ -370,9 +386,18 @@ async function connect() {
       try { await characteristic.startNotifications(); } catch (e) { console.warn("notify", e); }
     }
     setStatus("Connected to " + (device.name || "DesktopPet"), true);
+    try {                                                   // robot status (Wi-Fi, time, weather) - firmware v5+
+      infoChar = await service.getCharacteristic(INFO_UUID);
+      infoChar.addEventListener("characteristicvaluechanged", e => showInfo(e.target.value));
+      try { await infoChar.startNotifications(); } catch {}
+      showInfo(await infoChar.readValue());
+    } catch { infoChar = null; }
     const name = store.get("name", "");
     if (name) await write("NAME " + name, true);
+    await write("TZ " + (-new Date().getTimezoneOffset()), true);
     await syncTime(true);
+    const loc = store.get("loc", "");
+    if (loc) await write("LOC " + loc, true);
     await write("HELLO", true);
     if ($("wxAuto").checked) setTimeout(() => sendWeather(true), 4500);
   } catch (err) {
@@ -384,7 +409,29 @@ async function connect() {
     setStatus(map[err && err.name] || ("Bluetooth error: " + (err && err.message || err)), false);
   } finally { busy = false; connectBtn.disabled = false; }
 }
-function onDisconnect() { characteristic = null; setStatus("Disconnected — tap Connect", false); }
+function onDisconnect() { characteristic = null; infoChar = null; setStatus("Disconnected — tap Connect", false); }
+
+// ---------------------------------------------------------------- robot Wi-Fi
+function showInfo(dv) {
+  const txt = new TextDecoder().decode(dv);
+  const kv = {};
+  txt.split(";").forEach(p => { const i = p.indexOf(":"); if (i > 0) kv[p.slice(0, i)] = p.slice(i + 1); });
+  const st = ["Not set up", "Connecting…", "Online", "Can't connect — check the password", "Setup hotspot is on"][+kv.W] || "Unknown";
+  let line = "Wi-Fi: " + st;
+  if (kv.S) line += " · " + kv.S;
+  if (kv.IP) line += " · " + kv.IP;
+  if (+kv.W === 2) line += " · time " + (kv.T === "1" ? "✓" : "…") + " · weather " + (kv.X === "1" ? "✓" : "…");
+  $("wifiStatus").textContent = line;
+  if (kv.S && !$("wSsid").value) $("wSsid").value = kv.S;
+}
+$("wShow").addEventListener("click", () => { const p = $("wPass"); p.type = p.type === "password" ? "text" : "password"; });
+$("wSave").addEventListener("click", async () => {
+  const ssid = $("wSsid").value.trim(), pass = $("wPass").value;
+  if (!ssid) return toast("Enter the Wi-Fi name");
+  if (/\t/.test(ssid + pass)) return toast("Tab characters are not allowed");
+  if (await write("WIFI " + ssid + "\t" + pass, false)) { toast("Sent — the robot is joining " + ssid); $("wPass").value = ""; }
+});
+$("wForget").addEventListener("click", () => { if (confirm("Make the robot forget its Wi-Fi?")) send("WIFIFORGET"); });
 
 function write(text, quiet, fast) {
   if (!isConnected()) { if (!quiet) toast("Not connected — tap Connect first"); return Promise.resolve(false); }
@@ -850,6 +897,8 @@ async function sendWeather(quiet, speakIt) {
     $("wxIc").textContent = (code === 0 && !day) ? "🌙" : WX_ICON[code];
     $("wxTp").textContent = t + "°C";
     $("wxD").textContent = `${(code === 0 && !day) ? "Clear night" : WX_NAME[code]} · H ${hi}° L ${lo}° · ${city}`;
+    store.set("loc", `${(+loc.lat).toFixed(4)} ${(+loc.lon).toFixed(4)}|${city}`);
+    await write("LOC " + store.get("loc", ""), true);           // robot keeps it updated itself over Wi-Fi
     await write(`WX ${code} ${day} ${t} ${hi} ${lo}|${city}`, quiet);
     if (speakIt) speak(`It's ${t} degrees and ${WX_NAME[code].toLowerCase()} in ${city}.` + (code === 4 || code === 5 ? " Take an umbrella!" : ""));
   } catch (e) { if (!quiet) toast("Weather: " + (e.message || e)); }
